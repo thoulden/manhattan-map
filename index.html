@@ -40,7 +40,12 @@
     fetch('manhattan-boundary.json')
         .then(response => response.json())
         .then(data => {
-            manhattanBoundary = data;
+            // Handle both Feature and FeatureCollection formats
+            if (data.type === 'FeatureCollection') {
+                manhattanBoundary = data.features[0];
+            } else {
+                manhattanBoundary = data;
+            }
             initializeMap();
         })
         .catch(error => {
@@ -75,9 +80,9 @@
         zoom: 11.5,
         minZoom: 10,
         maxZoom: 16
-    });
+        });
 
-    map.on('load', () => {
+        map.on('load', () => {
         // Add Manhattan boundary source
         map.addSource('manhattan-boundary', {
             'type': 'geojson',
@@ -103,7 +108,7 @@
             'type': 'line',
             'source': 'composite',
             'source-layer': 'road',
-            'filter': ['primary', 'in', 'class', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
+            'filter': ['in', 'class', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
             'layout': {
                 'line-join': 'round',
                 'line-cap': 'round'
@@ -183,10 +188,11 @@
             [-73.91, 40.88]  // Northeast
         ];
         
-        map.fitBounds(bounds, {
-            padding: 50
+            map.fitBounds(bounds, {
+                padding: 50
+            });
         });
-    });
+    }
 </script>
 </body>
 </html>
