@@ -25,7 +25,7 @@
 <div id="map"></div>
 <script>
     // You'll need to replace this with your own Mapbox access token
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
+    mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
     
     // Variable to hold Manhattan boundary (loaded from external file)
     let manhattanBoundary = {
@@ -79,7 +79,8 @@
         center: [-73.9712, 40.7831], // Manhattan center
         zoom: 11.5,
         minZoom: 10,
-        maxZoom: 16
+        maxZoom: 16, 
+        bearing: -30
         });
 
         map.on('load', () => {
