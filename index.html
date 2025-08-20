@@ -6,6 +6,7 @@
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <style>
         body { 
             margin: 0; 
@@ -24,7 +25,37 @@
 <div id="map"></div>
 <script>
     // You'll need to replace this with your own Mapbox access token
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
+    mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+    
+    // Manhattan boundary coordinates (simplified polygon)
+    const manhattanBoundary = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [-74.0194, 40.6982],  // Battery Park (south tip)
+                [-74.0135, 40.7027],  // South Street Seaport
+                [-74.0090, 40.7052],  // Brooklyn Bridge area
+                [-73.9730, 40.7351],  // East River - Lower East Side
+                [-73.9584, 40.7489],  // East River - Midtown
+                [-73.9436, 40.7769],  // East River - Upper East Side
+                [-73.9340, 40.7969],  // East River - East Harlem
+                [-73.9283, 40.8253],  // East River - Harlem
+                [-73.9118, 40.8587],  // Spuyten Duyvil Creek (north)
+                [-73.9167, 40.8677],  // North tip
+                [-73.9269, 40.8789],  // Inwood (northwest)
+                [-73.9337, 40.8719],  // Hudson River - Inwood
+                [-73.9462, 40.8543],  // Hudson River - Washington Heights
+                [-73.9584, 40.8303],  // Hudson River - Harlem
+                [-73.9711, 40.8089],  // Hudson River - Upper West Side
+                [-73.9816, 40.7858],  // Hudson River - Midtown West
+                [-73.9935, 40.7571],  // Hudson River - Chelsea
+                [-74.0089, 40.7289],  // Hudson River - West Village
+                [-74.0147, 40.7147],  // Hudson River - Tribeca
+                [-74.0194, 40.6982]   // Back to Battery Park
+            ]]
+        }
+    };
     
     const map = new mapboxgl.Map({
         container: 'map',
@@ -47,117 +78,99 @@
             ]
         },
         center: [-73.9712, 40.7831], // Manhattan center
-        zoom: 12,
-        minZoom: 11,
-        maxZoom: 16,
-        // Bounds for Manhattan area
-        maxBounds: [
-            [-74.05, 40.68], // Southwest
-            [-73.90, 40.88]  // Northeast
-        ]
+        zoom: 11.5,
+        minZoom: 10,
+        maxZoom: 16
     });
 
     map.on('load', () => {
-        // Add all road layers with different styling based on road type
+        // Add Manhattan boundary source
+        map.addSource('manhattan-boundary', {
+            'type': 'geojson',
+            'data': manhattanBoundary
+        });
+
+        // Optional: Add a subtle outline of Manhattan
+        map.addLayer({
+            'id': 'manhattan-outline',
+            'type': 'line',
+            'source': 'manhattan-boundary',
+            'paint': {
+                'line-color': '#333333',
+                'line-width': 1
+            }
+        });
+
+        // Function to add road layers with Manhattan boundary filter
+        const addRoadLayer = (id, roadClasses, color, widthStops, minzoom = 10) => {
+            // First, add the roads layer for the bounding area
+            map.addLayer({
+                'id': id,
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['all',
+                    ['in', 'class', ...roadClasses],
+                    // Rough bounding box filter for Manhattan
+                    ['>', ['get', 'max_lon'], -74.02],
+                    ['<', ['get', 'min_lon'], -73.91],
+                    ['>', ['get', 'max_lat'], 40.69],
+                    ['<', ['get', 'min_lat'], 40.88]
+                ],
+                'minzoom': minzoom,
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': color,
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': widthStops
+                    }
+                }
+            });
+        };
+
+        // Add road layers
+        addRoadLayer(
+            'roads-motorway',
+            ['motorway', 'motorway_link', 'trunk', 'trunk_link'],
+            '#ffffff',
+            [[11, 2], [14, 4], [16, 8]]
+        );
+
+        addRoadLayer(
+            'roads-primary',
+            ['primary', 'primary_link'],
+            '#cccccc',
+            [[11, 1.5], [14, 3], [16, 6]]
+        );
+
+        addRoadLayer(
+            'roads-secondary',
+            ['secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
+            '#999999',
+            [[11, 1], [14, 2], [16, 4]]
+        );
+
+        addRoadLayer(
+            'roads-street',
+            ['street', 'street_limited', 'service', 'track'],
+            '#666666',
+            [[12, 0.5], [14, 1], [16, 2]],
+            12
+        );
+
+        // Fit map to Manhattan bounds with padding
+        const bounds = [
+            [-74.02, 40.69], // Southwest
+            [-73.91, 40.88]  // Northeast
+        ];
         
-        // Highways and major roads
-        map.addLayer({
-            'id': 'roads-motorway',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'motorway', 'motorway_link', 'trunk', 'trunk_link'],
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#ffffff',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 2],
-                        [14, 4],
-                        [16, 8]
-                    ]
-                }
-            }
+        map.fitBounds(bounds, {
+            padding: 50
         });
-
-        // Primary roads
-        map.addLayer({
-            'id': 'roads-primary',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'primary', 'primary_link'],
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#cccccc',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 1.5],
-                        [14, 3],
-                        [16, 6]
-                    ]
-                }
-            }
-        });
-
-        // Secondary roads
-        map.addLayer({
-            'id': 'roads-secondary',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#999999',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 1],
-                        [14, 2],
-                        [16, 4]
-                    ]
-                }
-            }
-        });
-
-        // Streets
-        map.addLayer({
-            'id': 'roads-street',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'street', 'street_limited', 'service', 'track'],
-            'minzoom': 12,
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#666666',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [12, 0.5],
-                        [14, 1],
-                        [16, 2]
-                    ]
-                }
-            }
-        });
-
-
     });
 </script>
 </body>
