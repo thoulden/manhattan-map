@@ -27,32 +27,120 @@
     // You'll need to replace this with your own Mapbox access token
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
-    // Manhattan boundary coordinates (simplified polygon)
+    // More precise Manhattan boundary coordinates
     const manhattanBoundary = {
         'type': 'Feature',
         'geometry': {
             'type': 'Polygon',
             'coordinates': [[
-                [-74.0194, 40.6982],  // Battery Park (south tip)
-                [-74.0135, 40.7027],  // South Street Seaport
-                [-74.0090, 40.7052],  // Brooklyn Bridge area
-                [-73.9730, 40.7351],  // East River - Lower East Side
-                [-73.9584, 40.7489],  // East River - Midtown
-                [-73.9436, 40.7769],  // East River - Upper East Side
-                [-73.9340, 40.7969],  // East River - East Harlem
-                [-73.9283, 40.8253],  // East River - Harlem
-                [-73.9118, 40.8587],  // Spuyten Duyvil Creek (north)
-                [-73.9167, 40.8677],  // North tip
-                [-73.9269, 40.8789],  // Inwood (northwest)
-                [-73.9337, 40.8719],  // Hudson River - Inwood
-                [-73.9462, 40.8543],  // Hudson River - Washington Heights
-                [-73.9584, 40.8303],  // Hudson River - Harlem
-                [-73.9711, 40.8089],  // Hudson River - Upper West Side
-                [-73.9816, 40.7858],  // Hudson River - Midtown West
-                [-73.9935, 40.7571],  // Hudson River - Chelsea
-                [-74.0089, 40.7289],  // Hudson River - West Village
-                [-74.0147, 40.7147],  // Hudson River - Tribeca
-                [-74.0194, 40.6982]   // Back to Battery Park
+                // Southern tip - Battery Park
+                [-74.0194, 40.6982],
+                [-74.0170, 40.6990],
+                [-74.0135, 40.7010],
+                [-74.0118, 40.7027],
+                [-74.0090, 40.7042],
+                [-74.0060, 40.7055],
+                
+                // East River - Lower East Side
+                [-74.0020, 40.7080],
+                [-73.9980, 40.7115],
+                [-73.9950, 40.7150],
+                [-73.9920, 40.7200],
+                [-73.9890, 40.7250],
+                [-73.9850, 40.7300],
+                [-73.9820, 40.7350],
+                [-73.9780, 40.7400],
+                [-73.9750, 40.7450],
+                [-73.9730, 40.7500],
+                
+                // East River - Midtown
+                [-73.9710, 40.7550],
+                [-73.9680, 40.7600],
+                [-73.9650, 40.7650],
+                [-73.9620, 40.7700],
+                [-73.9590, 40.7750],
+                [-73.9560, 40.7800],
+                
+                // East River - Upper East Side
+                [-73.9530, 40.7850],
+                [-73.9500, 40.7900],
+                [-73.9470, 40.7950],
+                [-73.9440, 40.8000],
+                [-73.9420, 40.8050],
+                [-73.9400, 40.8100],
+                [-73.9380, 40.8150],
+                [-73.9360, 40.8200],
+                
+                // East River - East Harlem to Harlem River
+                [-73.9340, 40.8250],
+                [-73.9320, 40.8300],
+                [-73.9300, 40.8350],
+                [-73.9280, 40.8400],
+                [-73.9260, 40.8450],
+                [-73.9240, 40.8500],
+                [-73.9220, 40.8550],
+                
+                // Harlem River - turn at top
+                [-73.9180, 40.8600],
+                [-73.9150, 40.8650],
+                [-73.9118, 40.8687],
+                
+                // Northern tip - Inwood
+                [-73.9110, 40.8720],
+                [-73.9115, 40.8750],
+                [-73.9150, 40.8780],
+                [-73.9200, 40.8790],
+                [-73.9250, 40.8785],
+                [-73.9300, 40.8770],
+                
+                // Hudson River - Inwood
+                [-73.9337, 40.8719],
+                [-73.9380, 40.8680],
+                [-73.9420, 40.8640],
+                [-73.9450, 40.8600],
+                [-73.9480, 40.8550],
+                
+                // Hudson River - Washington Heights
+                [-73.9500, 40.8500],
+                [-73.9520, 40.8450],
+                [-73.9540, 40.8400],
+                [-73.9560, 40.8350],
+                [-73.9580, 40.8300],
+                
+                // Hudson River - Upper West Side
+                [-73.9600, 40.8250],
+                [-73.9620, 40.8200],
+                [-73.9640, 40.8150],
+                [-73.9660, 40.8100],
+                [-73.9680, 40.8050],
+                [-73.9700, 40.8000],
+                [-73.9720, 40.7950],
+                [-73.9740, 40.7900],
+                [-73.9760, 40.7850],
+                
+                // Hudson River - Midtown West
+                [-73.9780, 40.7800],
+                [-73.9800, 40.7750],
+                [-73.9820, 40.7700],
+                [-73.9840, 40.7650],
+                [-73.9860, 40.7600],
+                [-73.9880, 40.7550],
+                [-73.9900, 40.7500],
+                [-73.9920, 40.7450],
+                
+                // Hudson River - Chelsea/West Village
+                [-73.9950, 40.7400],
+                [-73.9980, 40.7350],
+                [-74.0010, 40.7300],
+                [-74.0040, 40.7250],
+                [-74.0070, 40.7200],
+                [-74.0100, 40.7150],
+                
+                // Hudson River - Tribeca/Financial District
+                [-74.0130, 40.7100],
+                [-74.0150, 40.7050],
+                [-74.0170, 40.7000],
+                [-74.0194, 40.6982]
             ]]
         }
     };
@@ -78,9 +166,9 @@
             ]
         },
         center: [-73.9712, 40.7831], // Manhattan center
-        zoom: 11.5,
+        zoom: 12,
         minZoom: 10,
-        maxZoom: 16
+        maxZoom: 14
     });
 
     map.on('load', () => {
@@ -103,55 +191,7 @@
 
         // Add road layers directly without complex filtering
         
-        // Highways and major roads
-        map.addLayer({
-            'id': 'roads-motorway',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'motorway', 'motorway_link', 'trunk', 'trunk_link'],
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#ffffff',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 2],
-                        [14, 4],
-                        [16, 8]
-                    ]
-                }
-            }
-        });
-
-        // Primary roads
-        map.addLayer({
-            'id': 'roads-primary',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'primary', 'primary_link'],
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#cccccc',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 1.5],
-                        [14, 3],
-                        [16, 6]
-                    ]
-                }
-            }
-        });
-
-        // Secondary roads
+        // Secondary roads only (no highways or primary roads)
         map.addLayer({
             'id': 'roads-secondary',
             'type': 'line',
