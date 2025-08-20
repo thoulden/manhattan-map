@@ -80,8 +80,7 @@
         zoom: 11.8,
         minZoom: 10,
         maxZoom: 16, 
-        bearing: -30,
-        pitch: 15
+        bearing: 60
         });
 
         map.on('load', () => {
@@ -206,8 +205,7 @@
         
             map.fitBounds(bounds, {
                 padding: 50,
-                bearing: 30,  // Preserve the bearing
-                pitch: 15   
+                bearing: 60,  // Preserve the bearing
             });
         });
     }
