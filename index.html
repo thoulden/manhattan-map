@@ -80,7 +80,7 @@
         zoom: 11.5,
         minZoom: 10,
         maxZoom: 16, 
-        bearing: -30
+        bearing: 30
         });
 
         map.on('load', () => {
@@ -161,31 +161,6 @@
                         [11, 0.5],
                         [14, 1],
                         [16, 2]
-                    ]
-                }
-            }
-        });
-
-        // Pedestrian paths and park paths (great for running!)
-        map.addLayer({
-            'id': 'roads-pedestrian',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'pedestrian', 'path'],
-            'minzoom': 12,
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#666666',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [12, 0.5],
-                        [14, 0.8],
-                        [16, 1.5]
                     ]
                 }
             }
