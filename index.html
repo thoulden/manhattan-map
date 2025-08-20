@@ -76,11 +76,11 @@
                 }
             ]
         },
-        center: [-73.9712, 40.795], // Manhattan center
+        center: [-73.967, 40.795], // Manhattan center
         zoom: 12,
         minZoom: 10,
         maxZoom: 16, 
-        bearing: 121
+        bearing: 117.5
         });
 
         map.on('load', () => {
@@ -206,7 +206,7 @@
             map.fitBounds(bounds, {
                 zoom: 12,
                 padding: 50,
-                bearing: 121,  // Preserve the bearing
+                bearing: 117.5,  // Preserve the bearing
             });
         });
     }
