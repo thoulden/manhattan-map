@@ -101,66 +101,104 @@
             }
         });
 
-        // Function to add road layers with Manhattan boundary filter
-        const addRoadLayer = (id, roadClasses, color, widthStops, minzoom = 10) => {
-            // First, add the roads layer for the bounding area
-            map.addLayer({
-                'id': id,
-                'type': 'line',
-                'source': 'composite',
-                'source-layer': 'road',
-                'filter': ['all',
-                    ['in', 'class', ...roadClasses],
-                    // Rough bounding box filter for Manhattan
-                    ['>', ['get', 'max_lon'], -74.02],
-                    ['<', ['get', 'min_lon'], -73.91],
-                    ['>', ['get', 'max_lat'], 40.69],
-                    ['<', ['get', 'min_lat'], 40.88]
-                ],
-                'minzoom': minzoom,
-                'layout': {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                'paint': {
-                    'line-color': color,
-                    'line-width': {
-                        'base': 1.5,
-                        'stops': widthStops
-                    }
+        // Add road layers directly without complex filtering
+        
+        // Highways and major roads
+        map.addLayer({
+            'id': 'roads-motorway',
+            'type': 'line',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'motorway', 'motorway_link', 'trunk', 'trunk_link'],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#ffffff',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [11, 2],
+                        [14, 4],
+                        [16, 8]
+                    ]
                 }
-            });
-        };
+            }
+        });
 
-        // Add road layers
-        addRoadLayer(
-            'roads-motorway',
-            ['motorway', 'motorway_link', 'trunk', 'trunk_link'],
-            '#ffffff',
-            [[11, 2], [14, 4], [16, 8]]
-        );
+        // Primary roads
+        map.addLayer({
+            'id': 'roads-primary',
+            'type': 'line',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'primary', 'primary_link'],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#cccccc',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [11, 1.5],
+                        [14, 3],
+                        [16, 6]
+                    ]
+                }
+            }
+        });
 
-        addRoadLayer(
-            'roads-primary',
-            ['primary', 'primary_link'],
-            '#cccccc',
-            [[11, 1.5], [14, 3], [16, 6]]
-        );
+        // Secondary roads
+        map.addLayer({
+            'id': 'roads-secondary',
+            'type': 'line',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#999999',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [11, 1],
+                        [14, 2],
+                        [16, 4]
+                    ]
+                }
+            }
+        });
 
-        addRoadLayer(
-            'roads-secondary',
-            ['secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
-            '#999999',
-            [[11, 1], [14, 2], [16, 4]]
-        );
-
-        addRoadLayer(
-            'roads-street',
-            ['street', 'street_limited', 'service', 'track'],
-            '#666666',
-            [[12, 0.5], [14, 1], [16, 2]],
-            12
-        );
+        // Streets
+        map.addLayer({
+            'id': 'roads-street',
+            'type': 'line',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'street', 'street_limited', 'service', 'track'],
+            'minzoom': 12,
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#666666',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [12, 0.5],
+                        [14, 1],
+                        [16, 2]
+                    ]
+                }
+            }
+        });
 
         // Fit map to Manhattan bounds with padding
         const bounds = [
