@@ -180,11 +180,11 @@
                         'coordinates': [
                             // Outer ring - large box covering the whole view
                             [
-                                [-74.5, 40.4],
-                                [-74.5, 41.0],
-                                [-73.4, 41.0],
-                                [-73.4, 40.4],
-                                [-74.5, 40.4]
+                                [-84.5, 30.4],
+                                [-84.5, 51.0],
+                                [-63.4, 51.0],
+                                [-63.4, 30.4],
+                                [-84.5, 30.4]
                             ],
                             // Inner ring - Manhattan boundary (creates a hole)
                             manhattanBoundary.geometry.coordinates[0]
@@ -206,7 +206,7 @@
         
             map.fitBounds(bounds, {
                 padding: 50,
-                bearing: -30,  // Preserve the bearing
+                bearing: 30,  // Preserve the bearing
                 pitch: 15   
             });
         });
