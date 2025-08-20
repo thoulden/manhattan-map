@@ -89,15 +89,16 @@
             'data': manhattanBoundary
         });
 
-        // Add road layers - including more types but excluding highways
+        // Add road layers - excluding all highway-related infrastructure
         
         // Primary roads (like Broadway, Park Ave - these are runnable)
+        // Excluding primary_link which are often highway ramps
         map.addLayer({
             'id': 'roads-primary',
             'type': 'line',
             'source': 'composite',
             'source-layer': 'road',
-            'filter': ['in', 'class', 'primary', 'primary_link'],
+            'filter': ['==', 'class', 'primary'],  // Removed 'primary_link'
             'layout': {
                 'line-join': 'round',
                 'line-cap': 'round'
@@ -115,13 +116,13 @@
             }
         });
 
-        // Secondary roads
+        // Secondary roads - excluding link roads
         map.addLayer({
             'id': 'roads-secondary',
             'type': 'line',
             'source': 'composite',
             'source-layer': 'road',
-            'filter': ['in', 'class', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link'],
+            'filter': ['in', 'class', 'secondary', 'tertiary'],  // Removed 'secondary_link', 'tertiary_link'
             'layout': {
                 'line-join': 'round',
                 'line-cap': 'round'
@@ -139,13 +140,13 @@
             }
         });
 
-        // Regular streets
+        // Regular streets - excluding service roads which might be ramps
         map.addLayer({
             'id': 'roads-street',
             'type': 'line',
             'source': 'composite',
             'source-layer': 'road',
-            'filter': ['in', 'class', 'street', 'street_limited', 'service', 'track'],
+            'filter': ['in', 'class', 'street', 'street_limited'],  // Removed 'service', 'track'
             'minzoom': 11,
             'layout': {
                 'line-join': 'round',
@@ -159,6 +160,31 @@
                         [11, 0.5],
                         [14, 1],
                         [16, 2]
+                    ]
+                }
+            }
+        });
+
+        // Pedestrian paths and park paths (great for running!)
+        map.addLayer({
+            'id': 'roads-pedestrian',
+            'type': 'line',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'pedestrian', 'path'],
+            'minzoom': 12,
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#666666',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [12, 0.5],
+                        [14, 0.8],
+                        [16, 1.5]
                     ]
                 }
             }
