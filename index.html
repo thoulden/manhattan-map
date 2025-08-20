@@ -25,7 +25,7 @@
 <div id="map"></div>
 <script>
     // You'll need to replace this with your own Mapbox access token
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
+    mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
     
     // Variable to hold Manhattan boundary (loaded from external file)
     let manhattanBoundary = {
@@ -89,20 +89,33 @@
             'data': manhattanBoundary
         });
 
-        // Optional: Add a subtle outline of Manhattan
+        // Add road layers - including more types but excluding highways
+        
+        // Primary roads (like Broadway, Park Ave - these are runnable)
         map.addLayer({
-            'id': 'manhattan-outline',
+            'id': 'roads-primary',
             'type': 'line',
-            'source': 'manhattan-boundary',
+            'source': 'composite',
+            'source-layer': 'road',
+            'filter': ['in', 'class', 'primary', 'primary_link'],
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
             'paint': {
-                'line-color': '#333333',
-                'line-width': 1
+                'line-color': '#ffffff',
+                'line-width': {
+                    'base': 1.5,
+                    'stops': [
+                        [11, 1.5],
+                        [14, 3],
+                        [16, 6]
+                    ]
+                }
             }
         });
 
-        // Add road layers directly without complex filtering
-        
-        // Secondary roads only (no highways or primary roads)
+        // Secondary roads
         map.addLayer({
             'id': 'roads-secondary',
             'type': 'line',
@@ -114,7 +127,7 @@
                 'line-cap': 'round'
             },
             'paint': {
-                'line-color': '#999999',
+                'line-color': '#cccccc',
                 'line-width': {
                     'base': 1.5,
                     'stops': [
@@ -126,24 +139,24 @@
             }
         });
 
-        // Streets
+        // Regular streets
         map.addLayer({
             'id': 'roads-street',
             'type': 'line',
             'source': 'composite',
             'source-layer': 'road',
             'filter': ['in', 'class', 'street', 'street_limited', 'service', 'track'],
-            'minzoom': 12,
+            'minzoom': 11,
             'layout': {
                 'line-join': 'round',
                 'line-cap': 'round'
             },
             'paint': {
-                'line-color': '#666666',
+                'line-color': '#999999',
                 'line-width': {
                     'base': 1.5,
                     'stops': [
-                        [12, 0.5],
+                        [11, 0.5],
                         [14, 1],
                         [16, 2]
                     ]
