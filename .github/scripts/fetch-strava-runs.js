@@ -143,7 +143,7 @@ async function syncStravaRuns() {
         console.log('Successfully got access token');
         
         // Fetch recent runs (last 90 days)
-        const afterDate = Math.floor(Date.now() / 1000) - (200 * 24 * 60 * 60);
+        const afterDate = Math.floor(Date.now() / 1000) - (300 * 24 * 60 * 60);
         
         const options = {
             hostname: 'www.strava.com',
