@@ -184,6 +184,33 @@ class StravaIntegration {
         }
     }
 
+    async loadCachedRuns() {
+        try {
+            const response = await fetch('manhattan-runs.json');
+            if (!response.ok) {
+                console.log('No cached runs file found');
+                return;
+            }
+            
+            const runs = await response.json();
+            console.log(`Loading ${runs.length} cached Manhattan runs`);
+            
+            for (const run of runs) {
+                this.addRunToMap({
+                    id: run.id,
+                    name: run.name,
+                    start_date: run.date,
+                    distance: run.distance,
+                    moving_time: run.moving_time
+                }, run.coordinates);
+            }
+            
+            this.updateStats();
+        } catch (error) {
+            console.error('Error loading cached runs:', error);
+        }
+    }
+
     // Process individual run
     async processRun(activity) {
         // Get detailed activity data with polyline
