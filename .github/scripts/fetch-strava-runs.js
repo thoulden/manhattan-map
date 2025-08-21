@@ -17,6 +17,16 @@ function httpsRequest(options, postData = null) {
 
 // Refresh the access token
 async function refreshToken() {
+    console.log('Attempting to refresh token...');
+    console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
+    console.log('Client Secret exists:', !!process.env.STRAVA_CLIENT_SECRET);
+    console.log('Refresh Token exists:', !!process.env.STRAVA_REFRESH_TOKEN);
+    
+    if (!process.env.STRAVA_REFRESH_TOKEN) {
+        console.error('STRAVA_REFRESH_TOKEN is missing!');
+        return null;
+    }
+    
     const postData = JSON.stringify({
         client_id: process.env.STRAVA_CLIENT_ID,
         client_secret: process.env.STRAVA_CLIENT_SECRET,
@@ -35,6 +45,12 @@ async function refreshToken() {
     };
 
     const response = await httpsRequest(options, postData);
+    
+    if (!response.access_token) {
+        console.error('Failed to refresh token. Response:', response);
+        return null;
+    }
+    
     return response.access_token;
 }
 
