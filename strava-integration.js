@@ -13,7 +13,7 @@ class StravaIntegration {
         this.athleteId = localStorage.getItem('strava_athlete_id');
         
         this.initializeUI();
-        this.checkAuthStatus();
+        //this.checkAuthStatus(); // Uncomment out for mannual update
 
         this.loadCachedRuns();
     }
