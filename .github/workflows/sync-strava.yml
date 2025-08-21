@@ -1,0 +1,42 @@
+name: Sync Strava Runs Daily
+
+on:
+  schedule:
+    # Runs at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Also allow manual trigger
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  sync-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Fetch Strava runs and generate data
+        run: |
+          node .github/scripts/fetch-strava-runs.js
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+      
+      - name: Commit updated runs data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add manhattan-runs.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
+          git push
+      
+      - name: Deploy to Pages
+        uses: actions/deploy-pages@v4
