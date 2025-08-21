@@ -7,7 +7,23 @@ function httpsRequest(options, postData = null) {
         const req = https.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
-            res.on('end', () => resolve(JSON.parse(data)));
+            res.on('end', () => {
+                try {
+                    // Log the status code for debugging
+                    console.log(`Response status: ${res.statusCode}`);
+                    
+                    if (res.statusCode !== 200 && res.statusCode !== 201) {
+                        console.error(`HTTP Error ${res.statusCode}: ${data}`);
+                    }
+                    
+                    // Try to parse JSON
+                    const parsed = JSON.parse(data);
+                    resolve(parsed);
+                } catch (e) {
+                    console.error('Failed to parse response:', data);
+                    reject(e);
+                }
+            });
         });
         req.on('error', reject);
         if (postData) req.write(postData);
@@ -15,7 +31,6 @@ function httpsRequest(options, postData = null) {
     });
 }
 
-// Refresh the access token
 async function refreshToken() {
     console.log('Attempting to refresh token...');
     console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
@@ -45,13 +60,9 @@ async function refreshToken() {
     };
 
     const response = await httpsRequest(options, postData);
+    console.log('Token refresh response:', response);
     
-    if (!response.access_token) {
-        console.error('Failed to refresh token. Response:', response);
-        return null;
-    }
-    
-    return response.access_token;
+    return response; // Return the full response object
 }
 
 // Decode polyline
@@ -120,7 +131,26 @@ async function syncStravaRuns() {
         }
 
         // Get fresh access token
+        console.log('Refreshing access token...');
         const accessToken = await refreshToken();
+        
+        if (!accessToken) {
+            console.error('Failed to get access token');
+            process.exit(1);
+        }
+        
+        
+        // In syncStravaRuns function, after getting the access token:
+        console.log('Refreshing access token...');
+        const tokenResponse = await refreshToken();
+
+        if (!tokenResponse || !tokenResponse.access_token) {
+            console.error('Failed to get access token. Response:', tokenResponse);
+            process.exit(1);
+        }
+
+        const accessToken = tokenResponse.access_token;
+        console.log('Successfully got access token');
         
         // Fetch recent runs (last 90 days)
         const afterDate = Math.floor(Date.now() / 1000) - (90 * 24 * 60 * 60);
@@ -134,7 +164,21 @@ async function syncStravaRuns() {
             }
         };
 
+        console.log('Fetching activities from Strava...');
         const activities = await httpsRequest(options);
+        
+        // Check if activities is an array
+        if (!Array.isArray(activities)) {
+            console.error('Unexpected response from Strava:', activities);
+            if (activities.message) {
+                console.error('Error message:', activities.message);
+            }
+            if (activities.errors) {
+                console.error('Errors:', activities.errors);
+            }
+            process.exit(1);
+        }
+        
         console.log(`Found ${activities.length} runs`);
 
         const manhattanRuns = [];
@@ -187,8 +231,8 @@ async function syncStravaRuns() {
 
     } catch (error) {
         console.error('Error syncing runs:', error);
+        console.error('Error details:', error.message);
         process.exit(1);
     }
 }
-
 syncStravaRuns();
