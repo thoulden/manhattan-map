@@ -14,6 +14,8 @@ class StravaIntegration {
         
         this.initializeUI();
         this.checkAuthStatus();
+
+        this.loadCachedRuns();
     }
 
     // Initialize UI elements
