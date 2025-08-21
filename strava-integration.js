@@ -5,7 +5,7 @@ class StravaIntegration {
     constructor(map, manhattanBoundary) {
         this.map = map;
         this.manhattanBoundary = manhattanBoundary;
-        this.clientId = 'YOUR_STRAVA_CLIENT_ID'; // Replace with your Strava Client ID
+        this.clientId = 'YOUR_STRAVA_CLIENT_ID'; // Replace with your Strava Client ID: this stuff is only useful for manual checker
         this.clientSecret = 'YOUR_STRAVA_CLIENT_SECRET'; // Replace with your Strava Client Secret
         this.redirectUri = window.location.origin + window.location.pathname;
         this.accessToken = localStorage.getItem('strava_access_token');
@@ -18,6 +18,17 @@ class StravaIntegration {
         this.loadCachedRuns();
     }
 
+    // Initialize UI elements
+    initializeUI() {
+        // No UI elements - runs load automatically from cached file
+        console.log('Strava integration initialized - loading cached runs only');
+    }
+    // Attach event listeners to UI elements
+    attachEventListeners() {
+    // No UI elements to attach listeners to
+    }
+    //Uncomment below for including the mannual connect
+    /*
     // Initialize UI elements
     initializeUI() {
         // Add Strava connect button to the page
@@ -71,6 +82,7 @@ class StravaIntegration {
         document.body.appendChild(controlsDiv);
         this.attachEventListeners();
     }
+    
 
     // Attach event listeners to UI elements
     attachEventListeners() {
@@ -100,7 +112,7 @@ class StravaIntegration {
             this.exchangeCodeForToken(code);
         }
     }
-
+    */
     // Initiate Strava OAuth flow
     connectStrava() {
         const authUrl = `https://www.strava.com/oauth/authorize?` +
