@@ -2,14 +2,11 @@ name: Sync Strava Runs Daily
 
 on:
   schedule:
-    # Runs at 2 AM UTC every day
     - cron: '0 2 * * *'
-  workflow_dispatch:  # Also allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   sync-runs:
@@ -37,6 +34,3 @@ jobs:
           git add manhattan-runs.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
           git push
-      
-      - name: Deploy to Pages
-        uses: actions/deploy-pages@v4
