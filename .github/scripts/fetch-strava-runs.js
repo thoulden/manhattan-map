@@ -125,22 +125,12 @@ async function syncStravaRuns() {
     try {
         // Load Manhattan boundary
         const boundaryData = await fs.readFile('manhattan-boundary.json', 'utf8');
-        const manhattanBoundary = JSON.parse(boundaryData);
+        let manhattanBoundary = JSON.parse(boundaryData);
         if (manhattanBoundary.type === 'FeatureCollection') {
             manhattanBoundary = manhattanBoundary.features[0];
         }
 
         // Get fresh access token
-        console.log('Refreshing access token...');
-        const accessToken = await refreshToken();
-        
-        if (!accessToken) {
-            console.error('Failed to get access token');
-            process.exit(1);
-        }
-        
-        
-        // In syncStravaRuns function, after getting the access token:
         console.log('Refreshing access token...');
         const tokenResponse = await refreshToken();
 
