@@ -225,4 +225,95 @@ async function syncStravaRuns() {
         process.exit(1);
     }
 }
+
+// Add this function near the top after the other functions
+async function snapRunToRoads(coordinates, accessToken) {
+    // Your Mapbox token (add to GitHub Secrets as MAPBOX_ACCESS_TOKEN)
+    const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
+    
+    // Sample coordinates (API limit 100 points)
+    const sample = coordinates.filter((_, index) => 
+        index % Math.ceil(coordinates.length / 100) === 0
+    ).slice(0, 100);
+    
+    const coordString = sample
+        .map(coord => `${coord[0]},${coord[1]}`)
+        .join(';');
+    
+    const url = `https://api.mapbox.com/matching/v5/mapbox/walking/` +
+                `${coordString}?` +
+                `access_token=${MAPBOX_TOKEN}&` +
+                `geometries=geojson&` +
+                `radiuses=${sample.map(() => '25').join(';')}&` +
+                `tidy=true&` +
+                `gaps=split`;
+    
+    try {
+        const response = await httpsRequest({
+            hostname: 'api.mapbox.com',
+            path: `/matching/v5/mapbox/walking/${coordString}?` +
+                  `access_token=${MAPBOX_TOKEN}&` +
+                  `geometries=geojson&` +
+                  `radiuses=${sample.map(() => '25').join(';')}&` +
+                  `tidy=true&` +
+                  `gaps=split`,
+            method: 'GET'
+        });
+        
+        if (response.matchings && response.matchings.length > 0) {
+            const confidence = response.matchings[0].confidence;
+            console.log(`Map matching confidence: ${confidence}`);
+            
+            if (confidence > 0.5) {
+                return {
+                    matched: true,
+                    coordinates: response.matchings[0].geometry.coordinates,
+                    confidence: confidence
+                };
+            }
+        }
+        
+        return {
+            matched: false,
+            coordinates: coordinates,
+            confidence: 0
+        };
+        
+    } catch (error) {
+        console.error('Map matching failed:', error);
+        return {
+            matched: false,
+            coordinates: coordinates,
+            confidence: 0
+        };
+    }
+}
+
+// Update your syncStravaRuns function - modify the part where you process runs:
+if (detailed.map && detailed.map.polyline) {
+    const originalCoordinates = decodePolyline(detailed.map.polyline);
+    
+    // Try to snap to roads
+    const snapResult = await snapRunToRoads(originalCoordinates);
+    const coordinates = snapResult.matched ? snapResult.coordinates : originalCoordinates;
+    
+    // Check if run is in Manhattan
+    const inManhattan = coordinates.some(coord => 
+        isPointInManhattan(coord, manhattanBoundary)
+    );
+
+    if (inManhattan) {
+        manhattanRuns.push({
+            id: detailed.id,
+            name: detailed.name,
+            date: detailed.start_date,
+            distance: detailed.distance,
+            moving_time: detailed.moving_time,
+            coordinates: coordinates,
+            snapped: snapResult.matched,
+            confidence: snapResult.confidence
+        });
+        console.log(`Added Manhattan run: ${detailed.name} (snapped: ${snapResult.matched})`);
+    }
+}
 syncStravaRuns();
