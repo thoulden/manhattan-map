@@ -197,19 +197,27 @@
             }
         });
 
-        // Fit map to Manhattan bounds with padding
+// Fit map to Manhattan bounds with padding
         const bounds = [
             [-74.02, 40.69], // Southwest
             [-73.91, 40.88]  // Northeast
         ];
         
-            map.fitBounds(bounds, {
-                zoom: 12,
-                padding: 50,
-                bearing: 117  // Preserve the bearing
-            });
+        map.fitBounds(bounds, {
+            zoom: 12,
+            padding: 50,
+            bearing: 117  // Preserve the bearing
         });
-    }
+
+        // Initialize Strava integration after map loads
+        const script = document.createElement('script');
+        script.src = 'strava-integration.js';
+        script.onload = () => {
+            window.stravaIntegration = new StravaIntegration(map, manhattanBoundary);
+        };
+        document.head.appendChild(script);
+    });
+}
 </script>
 </body>
 </html>
