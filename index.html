@@ -182,41 +182,26 @@
                 }
             });
 
-            // Add logo overlay
-            map.loadImage('manhattan-runs-logo.png', (error, image) => {
-                if (error) {
-                    console.error('Error loading logo:', error);
-                    return;
+            // Add logo as a raster image overlay that scales with the map
+            map.addSource('logo-overlay', {
+                'type': 'image',
+                'url': 'manhattan-runs-logo.png',
+                'coordinates': [
+                    [-73.94, 40.78],   // top-left (rotated for bearing 119)
+                    [-73.82, 40.82],   // top-right
+                    [-73.80, 40.74],   // bottom-right
+                    [-73.92, 40.70]    // bottom-left
+                ]
+            });
+            
+            map.addLayer({
+                'id': 'logo-raster',
+                'type': 'raster',
+                'source': 'logo-overlay',
+                'paint': {
+                    'raster-opacity': 1,
+                    'raster-fade-duration': 0
                 }
-                
-                map.addImage('manhattan-logo', image);
-                
-                map.addSource('logo-source', {
-                    'type': 'geojson',
-                    'data': {
-                        'type': 'Feature',
-                        'geometry': {
-                            'type': 'Point',
-                            'coordinates': [-73.88, 40.76]
-                        }
-                    }
-                });
-                
-                map.addLayer({
-                    'id': 'logo-layer',
-                    'type': 'symbol',
-                    'source': 'logo-source',
-                    'layout': {
-                        'icon-image': 'manhattan-logo',
-                        'icon-size': 0.4,
-                        'icon-anchor': 'center',
-                        'icon-allow-overlap': true,
-                        'icon-ignore-placement': true,
-                        'icon-rotate': 119,
-                        'icon-rotation-alignment': 'map',
-                        'icon-pitch-alignment': 'map'
-                    }
-                });
             });
 
             const bounds = [
