@@ -111,7 +111,7 @@
         const source = window.map.getSource('logo-overlay');
         if (source) {
             source.updateImage({
-                url: 'manhattan-runs-logo-leftalign.png',
+                url: 'manhattan-runs-logo.png',
                 coordinates: newCorners
             });
         }
@@ -185,8 +185,8 @@
                     }
                 ]
             },
-            center: manhattanCenter,
-            zoom: 12,
+            center: [-73.93, 40.75],  // Shifted west and south to show logo text
+            zoom: 11.5,  // Slightly zoomed out to show more of the logo
             minZoom: 10,
             maxZoom: 16, 
             bearing: 119
@@ -299,7 +299,7 @@
             // Add logo as a raster image overlay
             window.map.addSource('logo-overlay', {
                 'type': 'image',
-                'url': 'manhattan-runs-logo-leftalign.png',
+                'url': 'manhattan-runs-logo.png',
                 'coordinates': logoConfig.originalCorners
             });
             
@@ -391,8 +391,8 @@
             ];
             
             window.map.fitBounds(bounds, {
-                center: manhattanCenter,
-                zoom: 12,
+                center: [-73.93, 40.75],  // Keep the adjusted center
+                zoom: 11.5,  // Keep the adjusted zoom
                 padding: 50,
                 bearing: 119
             });
