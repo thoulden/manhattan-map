@@ -24,23 +24,19 @@
 <body>
 <div id="map"></div>
 <script>
-    // You'll need to replace this with your own Mapbox access token
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
-    // Variable to hold Manhattan boundary (loaded from external file)
     let manhattanBoundary = {
         'type': 'Feature',
         'geometry': {
             'type': 'Polygon',
-            'coordinates': [[]] // Default empty, will be loaded from file
+            'coordinates': [[]]
         }
     };
     
-    // Load Manhattan boundary from external file
     fetch('manhattan-boundary.json')
         .then(response => response.json())
         .then(data => {
-            // Handle both Feature and FeatureCollection formats
             if (data.type === 'FeatureCollection') {
                 manhattanBoundary = data.features[0];
             } else {
@@ -50,218 +46,199 @@
         })
         .catch(error => {
             console.error('Error loading boundary file:', error);
-            // Fall back to a simple rectangle if file fails to load
             console.log('Using fallback boundary');
             initializeMap();
         });
     
     function initializeMap() {
         const map = new mapboxgl.Map({
-        container: 'map',
-        style: {
-            'version': 8,
-            'sources': {
-                'composite': {
-                    'type': 'vector',
-                    'url': 'mapbox://mapbox.mapbox-streets-v8'
-                }
-            },
-            'layers': [
-                {
-                    'id': 'background',
-                    'type': 'background',
-                    'paint': {
-                        'background-color': '#000000'
+            container: 'map',
+            style: {
+                'version': 8,
+                'sources': {
+                    'composite': {
+                        'type': 'vector',
+                        'url': 'mapbox://mapbox.mapbox-streets-v8'
                     }
-                }
-            ]
-        },
-        center: [-73.967, 40.79], // Manhattan center old: [-73.967, 40.795]
-        zoom: 12,
-        minZoom: 10,
-        maxZoom: 16, 
-        bearing: 119
+                },
+                'layers': [
+                    {
+                        'id': 'background',
+                        'type': 'background',
+                        'paint': {
+                            'background-color': '#000000'
+                        }
+                    }
+                ]
+            },
+            center: [-73.967, 40.79],
+            zoom: 12,
+            minZoom: 10,
+            maxZoom: 16, 
+            bearing: 119
         });
 
         map.on('load', () => {
-        // Add Manhattan boundary source
-        map.addSource('manhattan-boundary', {
-            'type': 'geojson',
-            'data': manhattanBoundary
-        });
-
-        // Add the logo overlay
-function addLogoOverlay() {
-    // Load the logo image
-    map.loadImage('manhattan-runs-logo.png', (error, image) => {
-        if (error) {
-            console.error('Error loading logo:', error);
-            return;
-        }
-        
-        // Add the image to the map
-        map.addImage('manhattan-logo', image);
-        
-        // Add a source with a single point positioned east of Manhattan
-        map.addSource('logo-source', {
-            'type': 'geojson',
-            'data': {
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [-73.88, 40.76] // East of Manhattan
-                },
-                'properties': {
-                    'rotation': 117  // Match the map bearing
-                }
-            }
-        });
-        
-        // Add the logo as a symbol layer
-        map.addLayer({
-            'id': 'logo-layer',
-            'type': 'symbol',
-            'source': 'logo-source',
-            'layout': {
-                'icon-image': 'manhattan-logo',
-                'icon-size': 0.4,  // Half size
-                'icon-anchor': 'center',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
-                'icon-rotate': 117,  // Rotate the logo to match map bearing
-                'icon-rotation-alignment': 'map',  // Rotates with map
-                'icon-pitch-alignment': 'map'      // Tilts with map
-            }
-        });
-    });
-}           
-        // Primary roads (like Broadway, Park Ave - these are runnable)
-        // Excluding primary_link which are often highway ramps
-        map.addLayer({
-            'id': 'roads-primary',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['==', 'class', 'primary'],  // Removed 'primary_link'
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#ffffff',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 1.5],
-                        [14, 3],
-                        [16, 6]
-                    ]
-                }
-            }
-        });
-
-        // Secondary roads - excluding link roads
-        map.addLayer({
-            'id': 'roads-secondary',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'secondary', 'tertiary'],  // Removed 'secondary_link', 'tertiary_link'
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#cccccc',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 1],
-                        [14, 2],
-                        [16, 4]
-                    ]
-                }
-            }
-        });
-
-        // Regular streets - excluding service roads which might be ramps
-        map.addLayer({
-            'id': 'roads-street',
-            'type': 'line',
-            'source': 'composite',
-            'source-layer': 'road',
-            'filter': ['in', 'class', 'street', 'street_limited'],  // Removed 'service', 'track'
-            'minzoom': 11,
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#999999',
-                'line-width': {
-                    'base': 1.5,
-                    'stops': [
-                        [11, 0.5],
-                        [14, 1],
-                        [16, 2]
-                    ]
-                }
-            }
-        });
-
-        // Add a mask to hide everything outside Manhattan
-        map.addLayer({
-            'id': 'mask-outside-manhattan',
-            'type': 'fill',
-            'source': {
+            map.addSource('manhattan-boundary', {
                 'type': 'geojson',
-                'data': {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Polygon',
-                        'coordinates': [
-                            // Outer ring - large box covering the whole view
-                            [
-                                [-84.5, 30.4],
-                                [-84.5, 51.0],
-                                [-63.4, 51.0],
-                                [-63.4, 30.4],
-                                [-84.5, 30.4]
-                            ],
-                            // Inner ring - Manhattan boundary (creates a hole)
-                            manhattanBoundary.geometry.coordinates[0]
+                'data': manhattanBoundary
+            });
+
+            map.addLayer({
+                'id': 'roads-primary',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['==', 'class', 'primary'],
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#ffffff',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 1.5],
+                            [14, 3],
+                            [16, 6]
                         ]
                     }
                 }
-            },
-            'paint': {
-                'fill-color': '#000000',
-                'fill-opacity': 1
-            }
-        });
+            });
 
-// Fit map to Manhattan bounds with padding
-        const bounds = [
-            [-74.02, 40.69], // Southwest
-            [-73.91, 40.88]  // Northeast
-        ];
-        
-        map.fitBounds(bounds, {
-            center: [-73.967, 40.79],
-            zoom: 12,
-            padding: 50,
-            bearing: 119  // Preserve the bearing
-        });
+            map.addLayer({
+                'id': 'roads-secondary',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['in', 'class', 'secondary', 'tertiary'],
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#cccccc',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 1],
+                            [14, 2],
+                            [16, 4]
+                        ]
+                    }
+                }
+            });
 
-        // Initialize Strava integration after map loads
-        const script = document.createElement('script');
-        script.src = 'strava-integration.js';
-        script.onload = () => {
-            window.stravaIntegration = new StravaIntegration(map, manhattanBoundary);
-        };
-        document.head.appendChild(script);
-    });
-}
+            map.addLayer({
+                'id': 'roads-street',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['in', 'class', 'street', 'street_limited'],
+                'minzoom': 11,
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#999999',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 0.5],
+                            [14, 1],
+                            [16, 2]
+                        ]
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': 'mask-outside-manhattan',
+                'type': 'fill',
+                'source': {
+                    'type': 'geojson',
+                    'data': {
+                        'type': 'Feature',
+                        'geometry': {
+                            'type': 'Polygon',
+                            'coordinates': [
+                                [
+                                    [-84.5, 30.4],
+                                    [-84.5, 51.0],
+                                    [-63.4, 51.0],
+                                    [-63.4, 30.4],
+                                    [-84.5, 30.4]
+                                ],
+                                manhattanBoundary.geometry.coordinates[0]
+                            ]
+                        }
+                    }
+                },
+                'paint': {
+                    'fill-color': '#000000',
+                    'fill-opacity': 1
+                }
+            });
+
+            // Add logo overlay
+            map.loadImage('manhattan-runs-logo.png', (error, image) => {
+                if (error) {
+                    console.error('Error loading logo:', error);
+                    return;
+                }
+                
+                map.addImage('manhattan-logo', image);
+                
+                map.addSource('logo-source', {
+                    'type': 'geojson',
+                    'data': {
+                        'type': 'Feature',
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': [-73.88, 40.76]
+                        }
+                    }
+                });
+                
+                map.addLayer({
+                    'id': 'logo-layer',
+                    'type': 'symbol',
+                    'source': 'logo-source',
+                    'layout': {
+                        'icon-image': 'manhattan-logo',
+                        'icon-size': 0.4,
+                        'icon-anchor': 'center',
+                        'icon-allow-overlap': true,
+                        'icon-ignore-placement': true,
+                        'icon-rotate': 119,
+                        'icon-rotation-alignment': 'map',
+                        'icon-pitch-alignment': 'map'
+                    }
+                });
+            });
+
+            const bounds = [
+                [-74.02, 40.69],
+                [-73.91, 40.88]
+            ];
+            
+            map.fitBounds(bounds, {
+                center: [-73.967, 40.79],
+                zoom: 12,
+                padding: 50,
+                bearing: 119
+            });
+
+            const script = document.createElement('script');
+            script.src = 'strava-integration.js';
+            script.onload = () => {
+                window.stravaIntegration = new StravaIntegration(map, manhattanBoundary);
+            };
+            document.head.appendChild(script);
+        });
+    }
 </script>
 </body>
 </html>
