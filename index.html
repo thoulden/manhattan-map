@@ -19,10 +19,31 @@
             bottom: 0; 
             width: 100%; 
         }
+        /* Logo overlay as HTML element */
+        #logo-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            width: 300px; /* Adjust size as needed */
+            height: auto;
+            opacity: 0.8; /* Adjust opacity as needed */
+        }
+        #logo-overlay img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
     </style>
 </head>
 <body>
 <div id="map"></div>
+<!-- Logo as HTML overlay -->
+<div id="logo-overlay">
+    <img src="manhattan-runs-logo.png" alt="Manhattan Runs">
+</div>
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
@@ -179,28 +200,6 @@
                 'paint': {
                     'fill-color': '#000000',
                     'fill-opacity': 1
-                }
-            });
-
-            // Add logo as a raster image overlay that scales with the map
-            map.addSource('logo-overlay', {
-                'type': 'image',
-                'url': 'manhattan-runs-logo.png',
-                'coordinates': [
-                    [-73.94, 40.78],   // top-left (rotated for bearing 119)
-                    [-73.82, 40.82],   // top-right
-                    [-73.80, 40.74],   // bottom-right
-                    [-73.92, 40.70]    // bottom-left
-                ]
-            });
-            
-            map.addLayer({
-                'id': 'logo-raster',
-                'type': 'raster',
-                'source': 'logo-overlay',
-                'paint': {
-                    'raster-opacity': 1,
-                    'raster-fade-duration': 0
                 }
             });
 
