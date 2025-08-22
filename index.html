@@ -111,7 +111,7 @@
         const source = window.map.getSource('logo-overlay');
         if (source) {
             source.updateImage({
-                url: 'manhattan-runs-logo-flat.png',
+                url: 'manhattan-runs-logo.png',
                 coordinates: newCorners
             });
         }
@@ -299,7 +299,7 @@
             // Add logo as a raster image overlay
             window.map.addSource('logo-overlay', {
                 'type': 'image',
-                'url': 'manhattan-runs-logo-flat.png',
+                'url': 'manhattan-runs-logo.png',
                 'coordinates': logoConfig.originalCorners
             });
             
