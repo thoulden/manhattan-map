@@ -82,14 +82,18 @@
         <div id="map"></div>
         <svg id="text-overlay" viewBox="0 0 1400 500" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <!-- Clip path: Only show content inside these text shapes -->
-                <clipPath id="text-clip">
+                <!-- Define the text shapes as a mask -->
+                <mask id="text-mask">
+                    <!-- Start with white (fully visible) -->
+                    <rect width="1400" height="500" fill="white"/>
+                    <!-- Cut out text shapes (black = transparent) -->
                     <text x="50%" 
                           y="40%" 
                           font-family="Arial Black, Helvetica, sans-serif" 
                           font-size="140" 
                           font-weight="900"
                           letter-spacing="-5"
+                          fill="black"
                           text-anchor="middle">MANHATTAN</text>
                     <text x="50%" 
                           y="75%" 
@@ -97,16 +101,13 @@
                           font-size="180" 
                           font-weight="900"
                           letter-spacing="20"
+                          fill="black"
                           text-anchor="middle">RUNS</text>
-                </clipPath>
+                </mask>
             </defs>
             
-            <!-- Method 1: Black background everywhere -->
-            <rect width="1400" height="500" fill="black"/>
-            
-            <!-- Method 2: White rectangle that's transparent, clipped to text shape -->
-            <!-- This creates a "window" through the black to see the map underneath -->
-            <rect width="1400" height="500" fill="rgba(255,255,255,0)" clip-path="url(#text-clip)"/>
+            <!-- Black rectangle with text cut out (so map shows through text) -->
+            <rect width="1400" height="500" fill="black" mask="url(#text-mask)"/>
         </svg>
     </div>
     
@@ -251,8 +252,8 @@
         document.getElementById('fontSize').addEventListener('input', (e) => {
             const value = e.target.value;
             document.getElementById('fontSizeValue').textContent = value;
-            // Update both text elements in the clip path
-            const texts = document.querySelectorAll('#text-clip text');
+            // Update both text elements in the mask
+            const texts = document.querySelectorAll('#text-mask text');
             texts[0].setAttribute('font-size', value);
             texts[1].setAttribute('font-size', parseInt(value) * 1.3);
         });
@@ -260,8 +261,8 @@
         document.getElementById('letterSpacing').addEventListener('input', (e) => {
             const value = e.target.value;
             document.getElementById('letterSpacingValue').textContent = value;
-            // Update both text elements in the clip path
-            const texts = document.querySelectorAll('#text-clip text');
+            // Update both text elements in the mask
+            const texts = document.querySelectorAll('#text-mask text');
             texts[0].setAttribute('letter-spacing', value);
             texts[1].setAttribute('letter-spacing', parseInt(value) * 4);
         });
