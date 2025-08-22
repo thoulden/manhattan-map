@@ -19,10 +19,23 @@
             bottom: 0; 
             width: 100%; 
         }
+        #coord-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="coord-display">Move mouse to see coordinates</div>
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
@@ -182,15 +195,16 @@
                 }
             });
 
-            // Add logo as a raster image overlay that scales with the map
+            // Add logo as a raster image overlay with proper coordinates
+            // Define a rectangle without rotation - Mapbox will handle the rotation with the bearing
             map.addSource('logo-overlay', {
                 'type': 'image',
                 'url': 'manhattan-runs-logo.png',
                 'coordinates': [
-                    [-73.817, 40.768],   // top-left
-                    [-73.846, 40.740],   // top-right
-                    [-73.975, 40.764],   // bottom-right
-                    [-73.946, 40.792]    // bottom-left
+                    [-74.02, 40.82],   // top-left
+                    [-73.91, 40.82],   // top-right  
+                    [-73.91, 40.74],   // bottom-right
+                    [-74.02, 40.74]    // bottom-left
                 ]
             });
             
@@ -199,9 +213,31 @@
                 'type': 'raster',
                 'source': 'logo-overlay',
                 'paint': {
-                    'raster-opacity': 1,
+                    'raster-opacity': 0.5,  // Adjust opacity as needed
                     'raster-fade-duration': 0
                 }
+            });
+
+            // Add cursor coordinate logging
+            map.on('mousemove', (e) => {
+                const coords = e.lngLat;
+                console.log(`Cursor: [${coords.lng.toFixed(4)}, ${coords.lat.toFixed(4)}]`);
+                
+                // Optional: also display in a div on screen
+                const display = document.getElementById('coord-display');
+                if (display) {
+                    display.innerHTML = `Lng: ${coords.lng.toFixed(4)}, Lat: ${coords.lat.toFixed(4)}`;
+                }
+            });
+            
+            // Click to log coordinates more prominently
+            map.on('click', (e) => {
+                const coords = e.lngLat;
+                console.log(`CLICKED: [${coords.lng.toFixed(4)}, ${coords.lat.toFixed(4)}]`);
+                
+                // Copy to clipboard format
+                const coordString = `[${coords.lng.toFixed(3)}, ${coords.lat.toFixed(3)}]`;
+                console.log('Ready to paste:', coordString);
             });
 
             const bounds = [
