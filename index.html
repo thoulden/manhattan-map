@@ -70,10 +70,10 @@
         center: null, // Will be calculated from corners
         scale: 1.0,
         originalCorners: [
-            [-73.860, 40.774],   // top-left (50% height reduction)
-            [-73.917, 40.734],   // top-right (50% height reduction)
-            [-73.968, 40.745],   // bottom-right (50% height reduction)
-            [-73.909, 40.785]    // bottom-left (50% height reduction)
+            [-73.860, 40.788],   // top-left
+            [-73.917, 40.709],   // top-right  
+            [-73.968, 40.731],   // bottom-right
+            [-73.909, 40.810]    // bottom-left
         ]
     };
     
@@ -111,7 +111,7 @@
         const source = window.map.getSource('logo-overlay');
         if (source) {
             source.updateImage({
-                url: 'manhattan-runs-logo.png',
+                url: 'manhattan-runs-logo-leftalign.png',
                 coordinates: newCorners
             });
         }
@@ -299,7 +299,7 @@
             // Add logo as a raster image overlay
             window.map.addSource('logo-overlay', {
                 'type': 'image',
-                'url': 'manhattan-runs-logo.png',
+                'url': 'manhattan-runs-logo-leftalign.png',
                 'coordinates': logoConfig.originalCorners
             });
             
