@@ -182,55 +182,27 @@
                 }
             });
 
-            // Add logo as a georeferenced image
-            // These coordinates define a rectangle in geographic space where the logo will be placed
-            // The logo will scale with the map and stay in place geographically
-            map.loadImage('manhattan-runs-logo.png', (error, image) => {
-                if (error) {
-                    console.error('Error loading logo:', error);
-                    return;
+            // Add logo as a raster image overlay with proper coordinates
+            // Define a rectangle without rotation - Mapbox will handle the rotation with the bearing
+            map.addSource('logo-overlay', {
+                'type': 'image',
+                'url': 'manhattan-runs-logo.png',
+                'coordinates': [
+                    [-74.02, 40.82],   // top-left
+                    [-73.91, 40.82],   // top-right  
+                    [-73.91, 40.74],   // bottom-right
+                    [-74.02, 40.74]    // bottom-left
+                ]
+            });
+            
+            map.addLayer({
+                'id': 'logo-raster',
+                'type': 'raster',
+                'source': 'logo-overlay',
+                'paint': {
+                    'raster-opacity': 0.5,  // Adjust opacity as needed
+                    'raster-fade-duration': 0
                 }
-                
-                map.addImage('logo', image);
-                
-                // Add the logo as a symbol layer positioned around Central Park/Midtown
-                map.addSource('logo-source', {
-                    'type': 'geojson',
-                    'data': {
-                        'type': 'FeatureCollection',
-                        'features': [{
-                            'type': 'Feature',
-                            'geometry': {
-                                'type': 'Point',
-                                'coordinates': [-73.967, 40.78] // Center of Manhattan
-                            }
-                        }]
-                    }
-                });
-                
-                map.addLayer({
-                    'id': 'logo-layer',
-                    'type': 'symbol',
-                    'source': 'logo-source',
-                    'layout': {
-                        'icon-image': 'logo',
-                        'icon-size': {
-                            'stops': [
-                                [10, 0.3],
-                                [12, 0.5],
-                                [14, 0.7],
-                                [16, 1.0]
-                            ]
-                        },
-                        'icon-allow-overlap': true,
-                        'icon-ignore-placement': true,
-                        'icon-rotation-alignment': 'map',
-                        'icon-pitch-alignment': 'map'
-                    },
-                    'paint': {
-                        'icon-opacity': 0.3 // Subtle overlay effect
-                    }
-                });
             });
 
             const bounds = [
