@@ -19,41 +19,10 @@
             bottom: 0; 
             width: 100%; 
         }
-        #coord-display {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 100;
-            pointer-events: none;
-        }
-        #logo-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 100;
-        }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="coord-display">Move mouse to see coordinates</div>
-<div id="logo-controls">
-    <div>Logo Center: <span id="logo-center"></span></div>
-    <div>Logo Scale: <span id="logo-scale">1.0</span></div>
-    <button onclick="moveLogo()">Move Logo to Click</button>
-    <button onclick="scaleLogo(0.5)">Scale 50%</button>
-    <button onclick="scaleLogo(2)">Scale 200%</button>
-</div>
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
@@ -64,87 +33,6 @@
             'coordinates': [[]]
         }
     };
-    
-    // Logo configuration - easy to modify
-    let logoConfig = {
-        center: null, // Will be calculated from corners
-        scale: 1.0,
-        originalCorners: [
-            [-73.835, 40.844],   // top-left
-            [-73.892, 40.766],   // top-right  
-            [-73.943, 40.788],   // bottom-right
-            [-73.884, 40.867]    // bottom-left
-        ]
-    };
-    
-    // Calculate logo center
-    function calculateLogoCenter() {
-        const coords = logoConfig.originalCorners;
-        const centerLon = coords.reduce((sum, c) => sum + c[0], 0) / 4;
-        const centerLat = coords.reduce((sum, c) => sum + c[1], 0) / 4;
-        logoConfig.center = [centerLon, centerLat];
-        return logoConfig.center;
-    }
-    
-    // Update logo position and scale
-    function updateLogo(newCenter, scale) {
-        if (!window.map) return;
-        
-        if (newCenter) logoConfig.center = newCenter;
-        if (scale !== undefined) logoConfig.scale = scale;
-        
-        // Calculate new corners based on center and scale
-        const originalCenter = calculateLogoCenter();
-        const newCorners = logoConfig.originalCorners.map(corner => {
-            // Vector from original center to corner
-            const dx = corner[0] - originalCenter[0];
-            const dy = corner[1] - originalCenter[1];
-            
-            // Apply scale and new center
-            return [
-                logoConfig.center[0] + dx * logoConfig.scale,
-                logoConfig.center[1] + dy * logoConfig.scale
-            ];
-        });
-        
-        // Update the source
-        const source = window.map.getSource('logo-overlay');
-        if (source) {
-            source.updateImage({
-                url: 'manhattan-runs-logo-leftalign.png',
-                coordinates: newCorners
-            });
-        }
-        
-        // Update logo center marker
-        const logoMarkerSource = window.map.getSource('logo-center-marker');
-        if (logoMarkerSource) {
-            logoMarkerSource.setData({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': logoConfig.center
-                }
-            });
-        }
-        
-        // Update display
-        document.getElementById('logo-center').innerText = 
-            `[${logoConfig.center[0].toFixed(3)}, ${logoConfig.center[1].toFixed(3)}]`;
-        document.getElementById('logo-scale').innerText = logoConfig.scale.toFixed(2);
-    }
-    
-    let clickToMove = false;
-    function moveLogo() {
-        clickToMove = true;
-        alert('Click on the map to move logo center to that location');
-    }
-    
-    function scaleLogo(factor) {
-        updateLogo(null, logoConfig.scale * factor);
-    }
-    
-    calculateLogoCenter();
     
     fetch('manhattan-boundary.json')
         .then(response => response.json())
@@ -163,9 +51,7 @@
         });
     
     function initializeMap() {
-        const manhattanCenter = [-73.967, 40.79];
-        
-        window.map = new mapboxgl.Map({
+        const map = new mapboxgl.Map({
             container: 'map',
             style: {
                 'version': 8,
@@ -185,20 +71,20 @@
                     }
                 ]
             },
-            center: [-73.944, 40.78],  // Half the shift: moved west by ~0.018 and south by ~0.02
-            zoom: 12,  // Back to original zoom
+            center: [-73.944, 40.78],
+            zoom: 12,
             minZoom: 10,
             maxZoom: 16, 
             bearing: 119
         });
 
-        window.map.on('load', () => {
-            window.map.addSource('manhattan-boundary', {
+        map.on('load', () => {
+            map.addSource('manhattan-boundary', {
                 'type': 'geojson',
                 'data': manhattanBoundary
             });
 
-            window.map.addLayer({
+            map.addLayer({
                 'id': 'roads-primary',
                 'type': 'line',
                 'source': 'composite',
@@ -221,7 +107,7 @@
                 }
             });
 
-            window.map.addLayer({
+            map.addLayer({
                 'id': 'roads-secondary',
                 'type': 'line',
                 'source': 'composite',
@@ -244,7 +130,7 @@
                 }
             });
 
-            window.map.addLayer({
+            map.addLayer({
                 'id': 'roads-street',
                 'type': 'line',
                 'source': 'composite',
@@ -268,7 +154,7 @@
                 }
             });
 
-            window.map.addLayer({
+            map.addLayer({
                 'id': 'mask-outside-manhattan',
                 'type': 'fill',
                 'source': {
@@ -297,13 +183,18 @@
             });
 
             // Add logo as a raster image overlay
-            window.map.addSource('logo-overlay', {
+            map.addSource('logo-overlay', {
                 'type': 'image',
                 'url': 'manhattan-runs-logo-leftalign.png',
-                'coordinates': logoConfig.originalCorners
+                'coordinates': [
+                    [-73.835, 40.844],   // top-left
+                    [-73.892, 40.766],   // top-right  
+                    [-73.943, 40.788],   // bottom-right
+                    [-73.884, 40.867]    // bottom-left
+                ]
             });
             
-            window.map.addLayer({
+            map.addLayer({
                 'id': 'logo-raster',
                 'type': 'raster',
                 'source': 'logo-overlay',
@@ -312,87 +203,15 @@
                     'raster-fade-duration': 0
                 }
             });
-            
-            // Add white dot at Manhattan center
-            window.map.addSource('manhattan-center-marker', {
-                'type': 'geojson',
-                'data': {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': manhattanCenter
-                    }
-                }
-            });
-            
-            window.map.addLayer({
-                'id': 'manhattan-center-dot',
-                'type': 'circle',
-                'source': 'manhattan-center-marker',
-                'paint': {
-                    'circle-radius': 6,
-                    'circle-color': '#ffffff',
-                    'circle-stroke-width': 2,
-                    'circle-stroke-color': '#000000'
-                }
-            });
-            
-            // Add white dot at logo center
-            window.map.addSource('logo-center-marker', {
-                'type': 'geojson',
-                'data': {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': logoConfig.center
-                    }
-                }
-            });
-            
-            window.map.addLayer({
-                'id': 'logo-center-dot',
-                'type': 'circle',
-                'source': 'logo-center-marker',
-                'paint': {
-                    'circle-radius': 6,
-                    'circle-color': '#ffffff',
-                    'circle-stroke-width': 2,
-                    'circle-stroke-color': '#ff0000'
-                }
-            });
-            
-            // Add cursor coordinate logging
-            window.map.on('mousemove', (e) => {
-                const coords = e.lngLat;
-                const display = document.getElementById('coord-display');
-                if (display) {
-                    display.innerHTML = `Lng: ${coords.lng.toFixed(4)}, Lat: ${coords.lat.toFixed(4)}`;
-                }
-            });
-            
-            // Click to log coordinates or move logo
-            window.map.on('click', (e) => {
-                const coords = e.lngLat;
-                console.log(`CLICKED: [${coords.lng.toFixed(4)}, ${coords.lat.toFixed(4)}]`);
-                
-                if (clickToMove) {
-                    updateLogo([coords.lng, coords.lat], logoConfig.scale);
-                    clickToMove = false;
-                }
-            });
-            
-            // Update initial display
-            document.getElementById('logo-center').innerText = 
-                `[${logoConfig.center[0].toFixed(3)}, ${logoConfig.center[1].toFixed(3)}]`;
 
             const bounds = [
                 [-74.02, 40.69],
                 [-73.91, 40.88]
             ];
             
-            window.map.fitBounds(bounds, {
-                center: [-73.944, 40.78],  // Half the shift from original
-                zoom: 12,  // Back to original zoom
+            map.fitBounds(bounds, {
+                center: [-73.944, 40.78],
+                zoom: 12,
                 padding: 50,
                 bearing: 119
             });
@@ -400,7 +219,7 @@
             const script = document.createElement('script');
             script.src = 'strava-integration.js';
             script.onload = () => {
-                window.stravaIntegration = new StravaIntegration(window.map, manhattanBoundary);
+                window.stravaIntegration = new StravaIntegration(map, manhattanBoundary);
             };
             document.head.appendChild(script);
         });
