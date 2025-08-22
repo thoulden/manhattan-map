@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Manhattan Runs Logo Generator</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        #container {
+            position: relative;
+            width: 1400px;
+            height: 500px;
+            background: black;
+        }
+        
+        #map {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #text-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #FC4C02;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #E63C00;
+        }
+        
+        input[type="range"] {
+            width: 200px;
+        }
+        
+        label {
+            color: white;
+        }
+        
+        #preview {
+            margin-top: 20px;
+            border: 2px solid #333;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: white;">Manhattan Runs Logo Generator</h1>
+    
+    <div id="container">
+        <div id="map"></div>
+        <svg id="text-overlay" viewBox="0 0 1400 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Create mask from text -->
+                <mask id="text-mask">
+                    <!-- Black background (hides everything) -->
+                    <rect width="1400" height="500" fill="black"/>
+                    <!-- White text (reveals map through text) -->
+                    <text id="manhattan-text" 
+                          x="50%" 
+                          y="40%" 
+                          font-family="Arial Black, Helvetica, sans-serif" 
+                          font-size="140" 
+                          font-weight="900"
+                          letter-spacing="-5"
+                          fill="white" 
+                          text-anchor="middle">MANHATTAN</text>
+                    <text id="runs-text"
+                          x="50%" 
+                          y="75%" 
+                          font-family="Arial Black, Helvetica, sans-serif" 
+                          font-size="180" 
+                          font-weight="900"
+                          letter-spacing="20"
+                          fill="white" 
+                          text-anchor="middle">RUNS</text>
+                </mask>
+            </defs>
+            
+            <!-- Apply mask: black everywhere except where text is -->
+            <rect width="1400" height="500" fill="black" mask="url(#text-mask)"/>
+        </svg>
+    </div>
+    
+    <div class="controls">
+        <label>
+            Font Size: 
+            <input type="range" id="fontSize" min="100" max="200" value="140">
+            <span id="fontSizeValue">140</span>
+        </label>
+        <label>
+            Letter Spacing: 
+            <input type="range" id="letterSpacing" min="-20" max="40" value="-5">
+            <span id="letterSpacingValue">-5</span>
+        </label>
+        <button onclick="resetView()">Reset View</button>
+        <button onclick="captureImage()">Download as PNG</button>
+    </div>
+    
+    <canvas id="preview"></canvas>
+
+    <script>
+        // Replace with your Mapbox token
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: {
+                'version': 8,
+                'sources': {
+                    'composite': {
+                        'type': 'vector',
+                        'url': 'mapbox://mapbox.mapbox-streets-v8'
+                    }
+                },
+                'layers': [
+                    {
+                        'id': 'background',
+                        'type': 'background',
+                        'paint': {
+                            'background-color': '#000000'
+                        }
+                    }
+                ]
+            },
+            center: [-73.9712, 40.7831],
+            zoom: 11.5,
+            bearing: 117,  // Match your main map rotation
+            pitch: 0,
+            interactive: true  // Allow adjusting the view
+        });
+
+        map.on('load', () => {
+            // Add Manhattan boundary if you have it
+            fetch('manhattan-boundary.json')
+                .then(response => response.json())
+                .then(data => {
+                    let boundary = data;
+                    if (data.type === 'FeatureCollection') {
+                        boundary = data.features[0];
+                    }
+                    
+                    map.addSource('manhattan-boundary', {
+                        'type': 'geojson',
+                        'data': boundary
+                    });
+                })
+                .catch(err => console.log('No boundary file found'));
+            
+            // Add all road types with your styling
+            map.addLayer({
+                'id': 'roads-primary',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['==', 'class', 'primary'],
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#ffffff',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 1.5],
+                            [14, 3],
+                            [16, 6]
+                        ]
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': 'roads-secondary',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['in', 'class', 'secondary', 'tertiary'],
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#cccccc',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 1],
+                            [14, 2],
+                            [16, 4]
+                        ]
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': 'roads-street',
+                'type': 'line',
+                'source': 'composite',
+                'source-layer': 'road',
+                'filter': ['in', 'class', 'street', 'street_limited'],
+                'minzoom': 11,
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#999999',
+                    'line-width': {
+                        'base': 1.5,
+                        'stops': [
+                            [11, 0.5],
+                            [14, 1],
+                            [16, 2]
+                        ]
+                    }
+                }
+            });
+        });
+
+        // Controls for adjusting text
+        document.getElementById('fontSize').addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('fontSizeValue').textContent = value;
+            document.getElementById('manhattan-text').setAttribute('font-size', value);
+            document.getElementById('runs-text').setAttribute('font-size', parseInt(value) * 1.3);
+        });
+
+        document.getElementById('letterSpacing').addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('letterSpacingValue').textContent = value;
+            document.getElementById('manhattan-text').setAttribute('letter-spacing', value);
+            document.getElementById('runs-text').setAttribute('letter-spacing', parseInt(value) * 4);
+        });
+
+        function resetView() {
+            map.jumpTo({
+                center: [-73.9712, 40.7831],
+                zoom: 11.5,
+                bearing: 117,
+                pitch: 0
+            });
+        }
+
+        async function captureImage() {
+            // Hide controls temporarily
+            const overlay = document.getElementById('text-overlay');
+            overlay.style.zIndex = '1000';
+            
+            // Use html2canvas to capture the container
+            const container = document.getElementById('container');
+            const canvas = await html2canvas(container, {
+                backgroundColor: '#000000',
+                scale: 2,  // Higher quality
+                logging: false,
+                useCORS: true
+            });
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'manhattan-runs-logo.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // Show preview
+            const preview = document.getElementById('preview');
+            preview.style.display = 'block';
+            preview.width = 700;
+            preview.height = 250;
+            const ctx = preview.getContext('2d');
+            ctx.drawImage(canvas, 0, 0, 700, 250);
+            
+            // Reset overlay
+            overlay.style.zIndex = '10';
+        }
+    </script>
+</body>
+</html>
