@@ -90,8 +90,54 @@
             'data': manhattanBoundary
         });
 
-        // Add road layers - excluding all highway-related infrastructure
+        function addLogoOverlay() {
+    // Load the logo image
+    map.loadImage('manhattan-runs-logo.png', (error, image) => {
+        if (error) {
+            console.error('Error loading logo:', error);
+            return;
+        }
         
+        // Add the image to the map
+        map.addImage('manhattan-logo', image);
+        
+        // Add a source with a single point (we'll use symbol placement)
+        map.addSource('logo-source', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [-73.9712, 40.7831] // Center of Manhattan
+                }
+            }
+        });
+        
+        // Add the logo as a symbol layer
+        map.addLayer({
+            'id': 'logo-layer',
+            'type': 'symbol',
+            'source': 'logo-source',
+            'layout': {
+                'icon-image': 'manhattan-logo',
+                'icon-size': 0.8,  // Adjust size as needed
+                'icon-anchor': 'center',
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+                'icon-rotation-alignment': 'map',  // Rotates with map
+                'icon-pitch-alignment': 'map'      // Tilts with map
+            }
+        });
+    });
+}
+
+// Call it after map loads
+map.on('idle', () => {
+    if (!map.hasImage('manhattan-logo')) {
+        addLogoOverlay();
+    }
+});
+            
         // Primary roads (like Broadway, Park Ave - these are runnable)
         // Excluding primary_link which are often highway ramps
         map.addLayer({
