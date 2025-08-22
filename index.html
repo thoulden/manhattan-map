@@ -182,16 +182,15 @@
                 }
             });
 
-            // Add logo as a raster image overlay with proper coordinates
-            // Define a rectangle without rotation - Mapbox will handle the rotation with the bearing
+            // Add logo as a raster image overlay that scales with the map
             map.addSource('logo-overlay', {
                 'type': 'image',
                 'url': 'manhattan-runs-logo.png',
                 'coordinates': [
-                    [-74.02, 40.82],   // top-left
-                    [-73.91, 40.82],   // top-right  
-                    [-73.91, 40.74],   // bottom-right
-                    [-74.02, 40.74]    // bottom-left
+                    [-73.94, 40.78],   // top-left (rotated for bearing 119)
+                    [-73.82, 40.82],   // top-right
+                    [-73.80, 40.74],   // bottom-right
+                    [-73.92, 40.70]    // bottom-left
                 ]
             });
             
@@ -200,7 +199,7 @@
                 'type': 'raster',
                 'source': 'logo-overlay',
                 'paint': {
-                    'raster-opacity': 0.5,  // Adjust opacity as needed
+                    'raster-opacity': 1,
                     'raster-fade-duration': 0
                 }
             });
