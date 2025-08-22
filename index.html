@@ -19,31 +19,10 @@
             bottom: 0; 
             width: 100%; 
         }
-        /* Logo overlay as HTML element */
-        #logo-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 10;
-            width: 300px; /* Adjust size as needed */
-            height: auto;
-            opacity: 0.8; /* Adjust opacity as needed */
-        }
-        #logo-overlay img {
-            width: 100%;
-            height: auto;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-        }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<!-- Logo as HTML overlay -->
-<div id="logo-overlay">
-    <img src="manhattan-runs-logo.png" alt="Manhattan Runs">
-</div>
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
     
@@ -201,6 +180,57 @@
                     'fill-color': '#000000',
                     'fill-opacity': 1
                 }
+            });
+
+            // Add logo as a georeferenced image
+            // These coordinates define a rectangle in geographic space where the logo will be placed
+            // The logo will scale with the map and stay in place geographically
+            map.loadImage('manhattan-runs-logo.png', (error, image) => {
+                if (error) {
+                    console.error('Error loading logo:', error);
+                    return;
+                }
+                
+                map.addImage('logo', image);
+                
+                // Add the logo as a symbol layer positioned around Central Park/Midtown
+                map.addSource('logo-source', {
+                    'type': 'geojson',
+                    'data': {
+                        'type': 'FeatureCollection',
+                        'features': [{
+                            'type': 'Feature',
+                            'geometry': {
+                                'type': 'Point',
+                                'coordinates': [-73.967, 40.78] // Center of Manhattan
+                            }
+                        }]
+                    }
+                });
+                
+                map.addLayer({
+                    'id': 'logo-layer',
+                    'type': 'symbol',
+                    'source': 'logo-source',
+                    'layout': {
+                        'icon-image': 'logo',
+                        'icon-size': {
+                            'stops': [
+                                [10, 0.3],
+                                [12, 0.5],
+                                [14, 0.7],
+                                [16, 1.0]
+                            ]
+                        },
+                        'icon-allow-overlap': true,
+                        'icon-ignore-placement': true,
+                        'icon-rotation-alignment': 'map',
+                        'icon-pitch-alignment': 'map'
+                    },
+                    'paint': {
+                        'icon-opacity': 0.3 // Subtle overlay effect
+                    }
+                });
             });
 
             const bounds = [
