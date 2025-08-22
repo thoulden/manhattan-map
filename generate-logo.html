@@ -82,43 +82,16 @@
         <div id="map"></div>
         <svg id="text-overlay" viewBox="0 0 1400 500" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <!-- Create mask from text -->
-                <mask id="text-mask">
-                    <!-- White background (shows everything) -->
-                    <rect width="1400" height="500" fill="white"/>
-                    <!-- Black text (hides map through text) -->
-                    <text id="manhattan-text" 
-                          x="50%" 
-                          y="40%" 
-                          font-family="Arial Black, Helvetica, sans-serif" 
-                          font-size="140" 
-                          font-weight="900"
-                          letter-spacing="-5"
-                          fill="black" 
-                          text-anchor="middle">MANHATTAN</text>
-                    <text id="runs-text"
-                          x="50%" 
-                          y="75%" 
-                          font-family="Arial Black, Helvetica, sans-serif" 
-                          font-size="180" 
-                          font-weight="900"
-                          letter-spacing="20"
-                          fill="black" 
-                          text-anchor="middle">RUNS</text>
-                </mask>
-                
-                <!-- Clip path for text -->
+                <!-- Clip path: Only show content inside these text shapes -->
                 <clipPath id="text-clip">
-                    <text id="manhattan-text-clip" 
-                          x="50%" 
+                    <text x="50%" 
                           y="40%" 
                           font-family="Arial Black, Helvetica, sans-serif" 
                           font-size="140" 
                           font-weight="900"
                           letter-spacing="-5"
                           text-anchor="middle">MANHATTAN</text>
-                    <text id="runs-text-clip"
-                          x="50%" 
+                    <text x="50%" 
                           y="75%" 
                           font-family="Arial Black, Helvetica, sans-serif" 
                           font-size="180" 
@@ -128,10 +101,12 @@
                 </clipPath>
             </defs>
             
-            <!-- Black background -->
+            <!-- Method 1: Black background everywhere -->
             <rect width="1400" height="500" fill="black"/>
-            <!-- Transparent rectangle that shows map ONLY through text -->
-            <rect width="1400" height="500" fill="white" opacity="0" clip-path="url(#text-clip)"/>
+            
+            <!-- Method 2: White rectangle that's transparent, clipped to text shape -->
+            <!-- This creates a "window" through the black to see the map underneath -->
+            <rect width="1400" height="500" fill="rgba(255,255,255,0)" clip-path="url(#text-clip)"/>
         </svg>
     </div>
     
@@ -276,19 +251,19 @@
         document.getElementById('fontSize').addEventListener('input', (e) => {
             const value = e.target.value;
             document.getElementById('fontSizeValue').textContent = value;
-            document.getElementById('manhattan-text').setAttribute('font-size', value);
-            document.getElementById('manhattan-text-clip').setAttribute('font-size', value);
-            document.getElementById('runs-text').setAttribute('font-size', parseInt(value) * 1.3);
-            document.getElementById('runs-text-clip').setAttribute('font-size', parseInt(value) * 1.3);
+            // Update both text elements in the clip path
+            const texts = document.querySelectorAll('#text-clip text');
+            texts[0].setAttribute('font-size', value);
+            texts[1].setAttribute('font-size', parseInt(value) * 1.3);
         });
 
         document.getElementById('letterSpacing').addEventListener('input', (e) => {
             const value = e.target.value;
             document.getElementById('letterSpacingValue').textContent = value;
-            document.getElementById('manhattan-text').setAttribute('letter-spacing', value);
-            document.getElementById('manhattan-text-clip').setAttribute('letter-spacing', value);
-            document.getElementById('runs-text').setAttribute('letter-spacing', parseInt(value) * 4);
-            document.getElementById('runs-text-clip').setAttribute('letter-spacing', parseInt(value) * 4);
+            // Update both text elements in the clip path
+            const texts = document.querySelectorAll('#text-clip text');
+            texts[0].setAttribute('letter-spacing', value);
+            texts[1].setAttribute('letter-spacing', parseInt(value) * 4);
         });
 
         function resetView() {
