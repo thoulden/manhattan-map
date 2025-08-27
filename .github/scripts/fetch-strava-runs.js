@@ -120,113 +120,7 @@ function isPointInManhattan(point, boundary) {
     return inside;
 }
 
-// Main function
-async function syncStravaRuns() {
-    try {
-        // Load Manhattan boundary
-        const boundaryData = await fs.readFile('manhattan-boundary.json', 'utf8');
-        let manhattanBoundary = JSON.parse(boundaryData);
-        if (manhattanBoundary.type === 'FeatureCollection') {
-            manhattanBoundary = manhattanBoundary.features[0];
-        }
-
-        // Get fresh access token
-        console.log('Refreshing access token...');
-        const tokenResponse = await refreshToken();
-
-        if (!tokenResponse || !tokenResponse.access_token) {
-            console.error('Failed to get access token. Response:', tokenResponse);
-            process.exit(1);
-        }
-
-        const accessToken = tokenResponse.access_token;
-        console.log('Successfully got access token');
-        
-        // Fetch recent runs (last 90 days)
-        const afterDate = Math.floor(Date.now() / 1000) - (300 * 24 * 60 * 60);
-        
-        const options = {
-            hostname: 'www.strava.com',
-            path: `/api/v3/athlete/activities?type=Run&after=${afterDate}&per_page=100`,
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        };
-
-        console.log('Fetching activities from Strava...');
-        const activities = await httpsRequest(options);
-        
-        // Check if activities is an array
-        if (!Array.isArray(activities)) {
-            console.error('Unexpected response from Strava:', activities);
-            if (activities.message) {
-                console.error('Error message:', activities.message);
-            }
-            if (activities.errors) {
-                console.error('Errors:', activities.errors);
-            }
-            process.exit(1);
-        }
-        
-        console.log(`Found ${activities.length} runs`);
-
-        const manhattanRuns = [];
-
-        // Process each activity
-        for (const activity of activities) {
-            if (!activity.start_latlng) continue;
-
-            // Get detailed activity with polyline
-            const detailOptions = {
-                hostname: 'www.strava.com',
-                path: `/api/v3/activities/${activity.id}`,
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            };
-
-            const detailed = await httpsRequest(detailOptions);
-            
-            if (detailed.map && detailed.map.polyline) {
-                const coordinates = decodePolyline(detailed.map.polyline);
-                
-                // Check if run is in Manhattan
-                const inManhattan = coordinates.some(coord => 
-                    isPointInManhattan(coord, manhattanBoundary)
-                );
-
-                if (inManhattan) {
-                    manhattanRuns.push({
-                        id: detailed.id,
-                        name: detailed.name,
-                        date: detailed.start_date,
-                        distance: detailed.distance,
-                        moving_time: detailed.moving_time,
-                        coordinates: coordinates
-                    });
-                    console.log(`Added Manhattan run: ${detailed.name}`);
-                }
-            }
-        }
-
-        // Save to JSON file
-        await fs.writeFile(
-            'manhattan-runs.json',
-            JSON.stringify(manhattanRuns, null, 2)
-        );
-
-        console.log(`Saved ${manhattanRuns.length} Manhattan runs`);
-
-    } catch (error) {
-        console.error('Error syncing runs:', error);
-        console.error('Error details:', error.message);
-        process.exit(1);
-    }
-}
-
-// Add this function near the top after the other functions
+// Snap run coordinates to roads using Mapbox Map Matching API
 async function snapRunToRoads(coordinates) {
     const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
     
@@ -323,31 +217,118 @@ async function snapRunToRoads(coordinates) {
         };
     }
 }
-// In the part where you process each detailed activity:
-if (detailed.map && detailed.map.polyline) {
-    const originalCoordinates = decodePolyline(detailed.map.polyline);
-    
-    // Try to snap to roads
-    const snapResult = await snapRunToRoads(originalCoordinates);
-    const coordinates = snapResult.matched ? snapResult.coordinates : originalCoordinates;
-    
-    // Check if run is in Manhattan
-    const inManhattan = coordinates.some(coord => 
-        isPointInManhattan(coord, manhattanBoundary)
-    );
 
-    if (inManhattan) {
-        manhattanRuns.push({
-            id: detailed.id,
-            name: detailed.name,
-            date: detailed.start_date,
-            distance: detailed.distance,
-            moving_time: detailed.moving_time,
-            coordinates: coordinates,
-            snapped: snapResult.matched,
-            confidence: snapResult.confidence
-        });
-        console.log(`Added Manhattan run: ${detailed.name} (snapped: ${snapResult.matched}, confidence: ${snapResult.confidence})`);
+// Main function
+async function syncStravaRuns() {
+    try {
+        // Load Manhattan boundary
+        const boundaryData = await fs.readFile('manhattan-boundary.json', 'utf8');
+        let manhattanBoundary = JSON.parse(boundaryData);
+        if (manhattanBoundary.type === 'FeatureCollection') {
+            manhattanBoundary = manhattanBoundary.features[0];
+        }
+
+        // Get fresh access token
+        console.log('Refreshing access token...');
+        const tokenResponse = await refreshToken();
+
+        if (!tokenResponse || !tokenResponse.access_token) {
+            console.error('Failed to get access token. Response:', tokenResponse);
+            process.exit(1);
+        }
+
+        const accessToken = tokenResponse.access_token;
+        console.log('Successfully got access token');
+        
+        // Fetch recent runs (last 300 days)
+        const afterDate = Math.floor(Date.now() / 1000) - (300 * 24 * 60 * 60);
+        
+        const options = {
+            hostname: 'www.strava.com',
+            path: `/api/v3/athlete/activities?type=Run&after=${afterDate}&per_page=100`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        };
+
+        console.log('Fetching activities from Strava...');
+        const activities = await httpsRequest(options);
+        
+        // Check if activities is an array
+        if (!Array.isArray(activities)) {
+            console.error('Unexpected response from Strava:', activities);
+            if (activities.message) {
+                console.error('Error message:', activities.message);
+            }
+            if (activities.errors) {
+                console.error('Errors:', activities.errors);
+            }
+            process.exit(1);
+        }
+        
+        console.log(`Found ${activities.length} runs`);
+
+        const manhattanRuns = [];
+
+        // Process each activity
+        for (const activity of activities) {
+            if (!activity.start_latlng) continue;
+
+            // Get detailed activity with polyline
+            const detailOptions = {
+                hostname: 'www.strava.com',
+                path: `/api/v3/activities/${activity.id}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            };
+
+            const detailed = await httpsRequest(detailOptions);
+            
+            if (detailed.map && detailed.map.polyline) {
+                const originalCoordinates = decodePolyline(detailed.map.polyline);
+                
+                // Try to snap to roads
+                const snapResult = await snapRunToRoads(originalCoordinates);
+                const coordinates = snapResult.matched ? snapResult.coordinates : originalCoordinates;
+                
+                // Check if run is in Manhattan
+                const inManhattan = coordinates.some(coord => 
+                    isPointInManhattan(coord, manhattanBoundary)
+                );
+
+                if (inManhattan) {
+                    manhattanRuns.push({
+                        id: detailed.id,
+                        name: detailed.name,
+                        date: detailed.start_date,
+                        distance: detailed.distance,
+                        moving_time: detailed.moving_time,
+                        coordinates: coordinates,
+                        snapped: snapResult.matched,
+                        confidence: snapResult.confidence
+                    });
+                    console.log(`Added Manhattan run: ${detailed.name} (snapped: ${snapResult.matched}, confidence: ${snapResult.confidence || 0})`);
+                }
+            }
+        }
+
+        // Save to JSON file
+        await fs.writeFile(
+            'manhattan-runs.json',
+            JSON.stringify(manhattanRuns, null, 2)
+        );
+
+        console.log(`Saved ${manhattanRuns.length} Manhattan runs`);
+
+    } catch (error) {
+        console.error('Error syncing runs:', error);
+        console.error('Error details:', error.message);
+        process.exit(1);
     }
 }
+
+// Run the sync function
 syncStravaRuns();
