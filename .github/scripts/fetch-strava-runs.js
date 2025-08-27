@@ -31,6 +31,7 @@ function httpsRequest(options, postData = null) {
     });
 }
 
+// Refresh Strava access token
 async function refreshToken() {
     console.log('Attempting to refresh token...');
     console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
@@ -65,7 +66,7 @@ async function refreshToken() {
     return response; // Return the full response object
 }
 
-// Decode polyline
+// Decode polyline from Strava
 function decodePolyline(encoded) {
     const points = [];
     let index = 0, lat = 0, lng = 0;
@@ -101,7 +102,7 @@ function decodePolyline(encoded) {
     return points;
 }
 
-// Check if point is in Manhattan
+// Check if point is in Manhattan using point-in-polygon algorithm
 function isPointInManhattan(point, boundary) {
     const [x, y] = point;
     const polygon = boundary.geometry.coordinates[0];
@@ -218,7 +219,7 @@ async function snapRunToRoads(coordinates) {
     }
 }
 
-// Main function
+// Main function to sync Strava runs
 async function syncStravaRuns() {
     try {
         // Load Manhattan boundary
@@ -310,7 +311,11 @@ async function syncStravaRuns() {
                         snapped: snapResult.matched,
                         confidence: snapResult.confidence
                     });
-                    console.log(`Added Manhattan run: ${detailed.name} (snapped: ${snapResult.matched}, confidence: ${snapResult.confidence || 0})`);
+                    
+                    const snapInfo = snapResult.matched 
+                        ? `snapped: true, confidence: ${snapResult.confidence}`
+                        : 'snapped: false';
+                    console.log(`Added Manhattan run: ${detailed.name} (${snapInfo})`);
                 }
             }
         }
@@ -321,14 +326,17 @@ async function syncStravaRuns() {
             JSON.stringify(manhattanRuns, null, 2)
         );
 
-        console.log(`Saved ${manhattanRuns.length} Manhattan runs`);
+        console.log(`Saved ${manhattanRuns.length} Manhattan runs to manhattan-runs.json`);
 
     } catch (error) {
         console.error('Error syncing runs:', error);
         console.error('Error details:', error.message);
+        if (error.stack) {
+            console.error('Stack trace:', error.stack);
+        }
         process.exit(1);
     }
 }
 
-// Run the sync function
+// Execute the sync function
 syncStravaRuns();
