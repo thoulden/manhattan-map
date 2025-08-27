@@ -288,36 +288,7 @@ async function syncStravaRuns() {
 
             const detailed = await httpsRequest(detailOptions);
             
-            if (detailed.map && detailed.map.polyline) {
-                const originalCoordinates = decodePolyline(detailed.map.polyline);
-                
-                // Try to snap to roads
-                const snapResult = await snapRunToRoads(originalCoordinates);
-                const coordinates = snapResult.matched ? snapResult.coordinates : originalCoordinates;
-                
-                // Check if run is in Manhattan
-                const inManhattan = coordinates.some(coord => 
-                    isPointInManhattan(coord, manhattanBoundary)
-                );
-
-                if (inManhattan) {
-                    manhattanRuns.push({
-                        id: detailed.id,
-                        name: detailed.name,
-                        date: detailed.start_date,
-                        distance: detailed.distance,
-                        moving_time: detailed.moving_time,
-                        coordinates: coordinates,
-                        snapped: snapResult.matched,
-                        confidence: snapResult.confidence
-                    });
-                    
-                    const snapInfo = snapResult.matched 
-                        ? `snapped: true, confidence: ${snapResult.confidence}`
-                        : 'snapped: false';
-                    console.log(`Added Manhattan run: ${detailed.name} (${snapInfo})`);
-                }
-            }
+            
         }
 
         // Save to JSON file
