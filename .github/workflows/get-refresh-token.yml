@@ -1,0 +1,25 @@
+name: Get Strava Refresh Token
+
+on:
+  workflow_dispatch:  # lets you trigger manually from GitHub UI
+
+jobs:
+  fetch-refresh-token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install fetch dependency
+        run: npm install node-fetch@3
+
+      - name: Run refresh token script
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_CODE: ${{ secrets.STRAVA_CODE }}
+        run: node scripts/fetch-refresh-token.js
