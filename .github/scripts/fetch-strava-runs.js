@@ -232,16 +232,20 @@ async function syncStravaRuns() {
             manhattanBoundary = manhattanBoundary.features[0];
         }
 
+
+
+        
         // Get fresh access token
         console.log('Refreshing access token...');
-        const tokenResponse = await refreshToken();
-
-        if (!tokenResponse || !tokenResponse.access_token) {
+        let accessToken = process.env.STRAVA_ACCESS_TOKEN;
+        if (!accessToken) {
+          const tokenResponse = await refreshToken();   // your existing function
+          if (!tokenResponse || !tokenResponse.access_token) {
             console.error('Failed to get access token. Response:', tokenResponse);
             process.exit(1);
+          }
+          accessToken = tokenResponse.access_token;
         }
-
-        const accessToken = tokenResponse.access_token;
         console.log('Successfully got access token');
         
         // Fetch recent runs (last 300 days)
