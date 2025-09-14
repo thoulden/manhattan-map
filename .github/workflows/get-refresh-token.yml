@@ -22,4 +22,4 @@ jobs:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_CODE: ${{ secrets.YOUR_AUTHORIZATION_CODE }}
-        run: node scripts/fetch-refresh-token.js
+        run: node .github/scripts/fetch-refresh-token.js
