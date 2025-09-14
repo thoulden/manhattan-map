@@ -69,21 +69,20 @@
 
     // Fetch runs and render miles counter
     function renderMilesCounter() {
-      const el = document.getElementById('miles-counter');
-      fetch('manhattan-runs.json', { cache: 'no-store' })
-        .then(r => r.json())
-        .then(runs => {
-          const totalMeters = runs.reduce((sum, run) => sum + (run.distance || 0), 0);
-          const miles = totalMeters / 1609.344;
-          // 1 decimal, with thousands separator
-          const formatted = miles.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-          el.textContent = `${formatted} mi`;
-        })
-        .catch(err => {
-          console.error('Failed to read manhattan-runs.json:', err);
-          el.textContent = '—';
-        });
-    }
+    const el = document.getElementById('miles-counter');
+    fetch('manhattan-runs.json', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(runs => {
+        const totalMeters = runs.reduce((sum, run) => sum + (run.distance || 0), 0);
+        const miles = totalMeters / 1609.344;
+        const rounded = Math.round(miles);
+        const formatted = rounded.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        el.textContent = `To Date: ${formatted} mi`;
+      })
+      .catch(() => {
+        el.textContent = 'To Date: —';
+      });
+  }
     
     function initializeMap() {
       const map = new mapboxgl.Map({
