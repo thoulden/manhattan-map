@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: '18'
 
-      # 2) Run your script with fresh tokens (no stray dash!)
+      # 2) Run your script with fresh tokens
       - name: Fetch Strava runs and generate data
         env:
           STRAVA_CLIENT_ID:     ${{ secrets.STRAVA_CLIENT_ID }}
@@ -58,12 +58,12 @@ jobs:
         run: node .github/scripts/fetch-strava-runs.js
 
       # 3) (Optional) auto-rotate the repo secret to the newest refresh token
-      # Add a repo-scoped PAT named GH_TOKEN to enable this step.
+      # Gate with env.GH_TOKEN instead of secrets.* in the if:
       - name: Rotate STRAVA_REFRESH_TOKEN secret
-        if: ${{ steps.refresh.outputs.refresh_token != '' && secrets.GH_TOKEN != '' }}
+        if: ${{ steps.refresh.outputs.refresh_token != '' && env.GH_TOKEN != '' }}
         env:
           NEW_RT:   ${{ steps.refresh.outputs.refresh_token }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # repo-scoped PAT with 'repo' scope
         run: |
           echo -n "$NEW_RT" | gh secret set STRAVA_REFRESH_TOKEN -R "$GITHUB_REPOSITORY" -b-
 
@@ -75,5 +75,3 @@ jobs:
           git add manhattan-runs.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
           git push
-
-
