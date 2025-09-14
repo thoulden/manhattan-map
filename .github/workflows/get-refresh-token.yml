@@ -1,13 +1,14 @@
 name: Get Strava Refresh Token
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # allows manual trigger from GitHub UI
 
 jobs:
   fetch-refresh-token:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Marker v3
         run: echo "USING .github/scripts path (v3)"
@@ -25,7 +26,7 @@ jobs:
 
       - name: Run refresh token script
         env:
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
-          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          STRAVA_CODE: ${{ secrets.YOUR_AUTHORIZATION_CODE }}
+          STRAVA_CLIENT_ID: "${{ secrets.STRAVA_CLIENT_ID }}"
+          STRAVA_CLIENT_SECRET: "${{ secrets.STRAVA_CLIENT_SECRET }}"
+          STRAVA_CODE: "${{ secrets.YOUR_AUTHORIZATION_CODE }}"
         run: node .github/scripts/fetch-refresh-token.js
