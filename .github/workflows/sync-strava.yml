@@ -13,25 +13,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      # --- 1) Refresh using current secret; get fresh access + refresh tokens ---
+      - name: Refresh Strava token (curl)
+        id: refresh
+        env:
+          CID:  ${{ secrets.STRAVA_CLIENT_ID }}
+          CSEC: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          RTOK: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y jq >/dev/null
+
+          RESP=$(curl -sS -X POST https://www.strava.com/api/v3/oauth/token \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data "client_id=${CID}&client_secret=${CSEC}&grant_type=refresh_token&refresh_token=${RTOK}")
+
+          echo "Raw refresh response (truncated):"
+          echo "$RESP" | jq '{access_token:(.access_token|tostring|sub(".+";"***")), refresh_token, expires_at}'
+
+          AT=$(echo "$RESP" | jq -r '.access_token // empty')
+          NEW_RT=$(echo "$RESP" | jq -r '.refresh_token // empty')
+          if [ -z "$AT" ] || [ -z "$NEW_RT" ]; then
+            echo "Refresh failed:"; echo "$RESP"; exit 1
+          fi
+
+          echo "access_token=$AT"   >> "$GITHUB_OUTPUT"
+          echo "refresh_token=$NEW_RT" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      
+
+      # --- 2) Run your script with fresh tokens ---
       - name: Fetch Strava runs and generate data
-        run: |
-          node .github/scripts/fetch-strava-runs.js
         env:
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_ID:     ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}- 
-          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}  # Add this line
-      
+          # use the NEW refresh token from the step above (no stray dash!)
+          STRAVA_REFRESH_TOKEN: ${{ steps.refresh.outputs.refresh_token }}
+          # also give it the fresh access token so it can skip refreshing
+          STRAVA_ACCESS_TOKEN:  ${{ steps.refresh.outputs.access_token }}
+          MAPBOX_ACCESS_TOKEN:  ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: node .github/scripts/fetch-strava-runs.js
+
+      # --- 3) (Optional) Auto-rotate the repo secret to the newest refresh token ---
+      # Add a repo-scoped PAT named GH_TOKEN with 'repo' scope to enable this.
+      - name: Rotate STRAVA_REFRESH_TOKEN secret
+        if: ${{ steps.refresh.outputs.refresh_token != '' && secrets.GH_TOKEN != '' }}
+        env:
+          NEW_RT:   ${{ steps.refresh.outputs.refresh_token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo -n "$NEW_RT" | gh secret set STRAVA_REFRESH_TOKEN -R "$GITHUB_REPOSITORY" -b-
+
+      # --- 4) Commit output file if it changed ---
       - name: Commit updated runs data
         run: |
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.name  "GitHub Action"
           git add manhattan-runs.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
           git push
+
