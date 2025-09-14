@@ -233,6 +233,7 @@ async function syncStravaRuns() {
 
         // Get fresh access token
         console.log('Refreshing access token...');
+        console.log('REFRESH length:', (process.env.STRAVA_REFRESH_TOKEN || '').trim().length);
         const tokenResponse = await refreshToken();
 
         if (!tokenResponse || !tokenResponse.access_token) {
