@@ -37,6 +37,7 @@ async function refreshToken() {
   console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
   console.log('Client Secret exists:', !!process.env.STRAVA_CLIENT_SECRET);
   console.log('Refresh Token exists:', !!process.env.STRAVA_REFRESH_TOKEN);
+  console.log('REFRESH length:', (process.env.STRAVA_REFRESH_TOKEN || '').trim().length);
 
   const refresh = (process.env.STRAVA_REFRESH_TOKEN || '').trim();
   if (!refresh) {
@@ -233,7 +234,6 @@ async function syncStravaRuns() {
 
         // Get fresh access token
         console.log('Refreshing access token...');
-        console.log('REFRESH length:', (process.env.STRAVA_REFRESH_TOKEN || '').trim().length);
         const tokenResponse = await refreshToken();
 
         if (!tokenResponse || !tokenResponse.access_token) {
