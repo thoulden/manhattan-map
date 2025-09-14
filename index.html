@@ -12,24 +12,16 @@
       /* Match this to your run polyline color if different */
       --run-orange: #ff6a00;
     }
-    body { 
-      margin: 0; 
-      padding: 0; 
-      background: #000;
-    }
-    #map { 
-      position: absolute; 
-      top: 0; 
-      bottom: 0; 
-      width: 100%; 
-    }
-    /* === miles counter overlay === */
+    body { margin: 0; padding: 0; background: #000; }
+    #map  { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+    /* miles counter overlay */
     #miles-counter{
       position: absolute;
       top: 14px;
       right: 14px;
-      z-index: 10;              /* above map */
-      pointer-events: none;     /* don't block map interactions */
+      z-index: 10;
+      pointer-events: none;
       color: var(--run-orange);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       font-weight: 800;
@@ -45,62 +37,98 @@
 <body>
   <div id="map"></div>
   <!-- total miles badge -->
-  <div id="miles-counter" aria-label="Total miles run">—</div>
+  <div id="miles-counter" aria-label="Total miles run">To Date: —</div>
 
   <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidGhvdWxkZW4iLCJhIjoiY21jczl5Y3VqMTAweTJrczN5ajlpcXY2ciJ9.51bpDEgJ0f0i8QF-2Tlxtg';
-    
-    let manhattanBoundary = {
-      'type': 'Feature',
-      'geometry': { 'type': 'Polygon', 'coordinates': [[]] }
-    };
-    
-    fetch('manhattan-boundary.json')
-      .then(response => response.json())
-      .then(data => {
-        manhattanBoundary = (data.type === 'FeatureCollection') ? data.features[0] : data;
-        initializeMap();
-      })
-      .catch(error => {
-        console.error('Error loading boundary file:', error);
-        console.log('Using fallback boundary');
-        initializeMap();
-      });
 
-    // Fetch runs and render miles counter
+    let manhattanBoundary = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } };
+    let centralParkBoundary = null;
+
+    // Load both boundaries, then install the runs filter and init the map
+    Promise.all([
+      fetch('manhattan-boundary.json').then(r => r.json()).catch(() => null),
+      fetch('central-park-boundary.json').then(r => r.json()).catch(() => null)
+    ])
+    .then(([mb, cp]) => {
+      if (mb) manhattanBoundary = (mb.type === 'FeatureCollection') ? mb.features[0] : mb;
+      if (cp) centralParkBoundary = (cp.type === 'FeatureCollection') ? cp.features[0] : cp;
+
+      if (centralParkBoundary && centralParkBoundary.geometry) {
+        installRunsFilter(centralParkBoundary); // excludes runs >60% inside CP
+      } else {
+        console.warn('Central Park boundary not loaded; runs will not be filtered.');
+      }
+
+      initializeMap();
+    })
+    .catch(err => {
+      console.error('Error loading boundaries:', err);
+      initializeMap(); // still initialize without filtering
+    });
+
+    /**
+     * Wraps window.fetch so that any request for "manhattan-runs.json"
+     * returns a filtered array where runs with >60% points inside
+     * Central Park are excluded.
+     */
+    function installRunsFilter(cpFeature) {
+      const originalFetch = window.fetch.bind(window);
+
+      window.fetch = async (input, init) => {
+        const url = (typeof input === 'string') ? input : input.url;
+
+        if (url && url.endsWith('manhattan-runs.json')) {
+          const res = await originalFetch(input, init);
+          const runs = await res.json();
+
+          if (!Array.isArray(runs)) {
+            return new Response(JSON.stringify(runs), { headers: { 'Content-Type': 'application/json' } });
+          }
+
+          const insideCP = (lngLat) => turf.booleanPointInPolygon(turf.point(lngLat), cpFeature);
+
+          const filtered = runs.filter(run => {
+            const coords = run.coordinates || [];
+            if (coords.length === 0) return true; // keep empty/invalid
+            let insideCount = 0;
+            for (const c of coords) if (insideCP(c)) insideCount++;
+            const fracInside = insideCount / coords.length;
+            return fracInside <= 0.60; // exclude if >60% inside CP
+          });
+
+          return new Response(JSON.stringify(filtered), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        return originalFetch(input, init);
+      };
+    }
+
+    // === Miles counter (automatically uses filtered runs thanks to the fetch shim) ===
     function renderMilesCounter() {
-    const el = document.getElementById('miles-counter');
-    fetch('manhattan-runs.json', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(runs => {
-        const totalMeters = runs.reduce((sum, run) => sum + (run.distance || 0), 0);
-        const miles = totalMeters / 1609.344;
-        const rounded = Math.round(miles);
-        const formatted = rounded.toLocaleString(undefined, { maximumFractionDigits: 0 });
-        el.textContent = `To Date: ${formatted} mi`;
-      })
-      .catch(() => {
-        el.textContent = 'To Date: —';
-      });
-  }
-    
+      const el = document.getElementById('miles-counter');
+      fetch('manhattan-runs.json', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(runs => {
+          const totalMeters = runs.reduce((sum, run) => sum + (run.distance || 0), 0);
+          const miles = totalMeters / 1609.344;
+          const rounded = Math.round(miles);
+          const formatted = rounded.toLocaleString(undefined, { maximumFractionDigits: 0 });
+          el.textContent = `To Date: ${formatted} mi`;
+        })
+        .catch(() => { el.textContent = 'To Date: —'; });
+    }
+
     function initializeMap() {
       const map = new mapboxgl.Map({
         container: 'map',
         style: {
-          'version': 8,
-          'sources': {
-            'composite': {
-              'type': 'vector',
-              'url': 'mapbox://mapbox.mapbox-streets-v8'
-            }
+          version: 8,
+          sources: {
+            composite: { type: 'vector', url: 'mapbox://mapbox.mapbox-streets-v8' }
           },
-          'layers': [
-            {
-              'id': 'background',
-              'type': 'background',
-              'paint': { 'background-color': '#000000' }
-            }
+          layers: [
+            { id: 'background', type: 'background', paint: { 'background-color': '#000000' } }
           ]
         },
         center: [-73.944, 40.78],
@@ -111,100 +139,97 @@
       });
 
       map.on('load', () => {
-        map.addSource('manhattan-boundary', { 'type': 'geojson', 'data': manhattanBoundary });
+        map.addSource('manhattan-boundary', { type: 'geojson', data: manhattanBoundary });
 
         map.addLayer({
-          'id': 'roads-primary',
-          'type': 'line',
-          'source': 'composite',
+          id: 'roads-primary',
+          type: 'line',
+          source: 'composite',
           'source-layer': 'road',
-          'filter': ['==', 'class', 'primary'],
-          'layout': { 'line-join': 'round', 'line-cap': 'round' },
-          'paint': {
+          filter: ['==', 'class', 'primary'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
             'line-color': '#ffffff',
-            'line-width': { 'base': 1.5, 'stops': [[11, 1.5],[14, 3],[16, 6]] }
+            'line-width': { base: 1.5, stops: [[11, 1.5],[14, 3],[16, 6]] }
           }
         });
 
         map.addLayer({
-          'id': 'roads-secondary',
-          'type': 'line',
-          'source': 'composite',
+          id: 'roads-secondary',
+          type: 'line',
+          source: 'composite',
           'source-layer': 'road',
-          'filter': ['in', 'class', 'secondary', 'tertiary'],
-          'layout': { 'line-join': 'round', 'line-cap': 'round' },
-          'paint': {
+          filter: ['in', 'class', 'secondary', 'tertiary'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
             'line-color': '#cccccc',
-            'line-width': { 'base': 1.5, 'stops': [[11, 1],[14, 2],[16, 4]] }
+            'line-width': { base: 1.5, stops: [[11, 1],[14, 2],[16, 4]] }
           }
         });
 
         map.addLayer({
-          'id': 'roads-street',
-          'type': 'line',
-          'source': 'composite',
+          id: 'roads-street',
+          type: 'line',
+          source: 'composite',
           'source-layer': 'road',
-          'filter': ['in', 'class', 'street', 'street_limited'],
-          'minzoom': 11,
-          'layout': { 'line-join': 'round', 'line-cap': 'round' },
-          'paint': {
+          filter: ['in', 'class', 'street', 'street_limited'],
+          minzoom: 11,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
             'line-color': '#999999',
-            'line-width': { 'base': 1.5, 'stops': [[11, .5],[14, 1],[16, 2]] }
+            'line-width': { base: 1.5, stops: [[11, .5],[14, 1],[16, 2]] }
           }
         });
 
         map.addLayer({
-          'id': 'mask-outside-manhattan',
-          'type': 'fill',
-          'source': {
-            'type': 'geojson',
-            'data': {
-              'type': 'Feature',
-              'geometry': {
-                'type': 'Polygon',
-                'coordinates': [
+          id: 'mask-outside-manhattan',
+          type: 'fill',
+          source: {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
                   [
-                    [-84.5, 30.4],
-                    [-84.5, 51.0],
-                    [-63.4, 51.0],
-                    [-63.4, 30.4],
-                    [-84.5, 30.4]
+                    [-84.5, 30.4], [-84.5, 51.0], [-63.4, 51.0],
+                    [-63.4, 30.4], [-84.5, 30.4]
                   ],
                   manhattanBoundary.geometry.coordinates[0]
                 ]
               }
             }
           },
-          'paint': { 'fill-color': '#000000', 'fill-opacity': 1 }
+          paint: { 'fill-color': '#000000', 'fill-opacity': 1 }
         });
 
         // Logo overlay
         map.addSource('logo-overlay', {
-          'type': 'image',
-          'url': 'manhattan-runs-logo-leftalign.png',
-          'coordinates': [
+          type: 'image',
+          url: 'manhattan-runs-logo-leftalign.png',
+          coordinates: [
             [-73.835, 40.844],   // top-left
-            [-73.892, 40.766],   // top-right  
+            [-73.892, 40.766],   // top-right
             [-73.943, 40.788],   // bottom-right
             [-73.884, 40.867]    // bottom-left
           ]
         });
         map.addLayer({
-          'id': 'logo-raster',
-          'type': 'raster',
-          'source': 'logo-overlay',
-          'paint': { 'raster-opacity': 1, 'raster-fade-duration': 0 }
+          id: 'logo-raster',
+          type: 'raster',
+          source: 'logo-overlay',
+          paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
         });
 
         const bounds = [[-74.02, 40.69], [-73.91, 40.88]];
         map.fitBounds(bounds, { center: [-73.944, 40.78], zoom: 11.75, padding: 50, bearing: 119 });
 
+        // Load your integration AFTER the fetch shim so it sees filtered runs
         const script = document.createElement('script');
         script.src = 'strava-integration.js';
         script.onload = () => {
           window.stravaIntegration = new StravaIntegration(map, manhattanBoundary);
-          // Once the map and runs are ready, show the total
-          renderMilesCounter();
+          renderMilesCounter(); // reads filtered runs
         };
         document.head.appendChild(script);
       });
