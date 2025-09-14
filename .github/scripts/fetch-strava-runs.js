@@ -33,38 +33,40 @@ function httpsRequest(options, postData = null) {
 
 // Refresh Strava access token
 async function refreshToken() {
-    console.log('Attempting to refresh token...');
-    console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
-    console.log('Client Secret exists:', !!process.env.STRAVA_CLIENT_SECRET);
-    console.log('Refresh Token exists:', !!process.env.STRAVA_REFRESH_TOKEN);
-    
-    if (!process.env.STRAVA_REFRESH_TOKEN) {
-        console.error('STRAVA_REFRESH_TOKEN is missing!');
-        return null;
-    }
-    
-    const postData = JSON.stringify({
-        client_id: process.env.STRAVA_CLIENT_ID,
-        client_secret: process.env.STRAVA_CLIENT_SECRET,
-        refresh_token: process.env.STRAVA_REFRESH_TOKEN,
-        grant_type: 'refresh_token'
-    });
+  console.log('Attempting to refresh token...');
+  console.log('Client ID exists:', !!process.env.STRAVA_CLIENT_ID);
+  console.log('Client Secret exists:', !!process.env.STRAVA_CLIENT_SECRET);
+  console.log('Refresh Token exists:', !!process.env.STRAVA_REFRESH_TOKEN);
 
-    const options = {
-        hostname: 'www.strava.com',
-        path: '/oauth/token',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': postData.length
-        }
-    };
+  const refresh = (process.env.STRAVA_REFRESH_TOKEN || '').trim();
+  if (!refresh) {
+    console.error('STRAVA_REFRESH_TOKEN is missing!');
+    return null;
+  }
 
-    const response = await httpsRequest(options, postData);
-    console.log('Token refresh response:', response);
-    
-    return response; // Return the full response object
+  // Strava expects x-www-form-urlencoded, not JSON
+  const postData = new URLSearchParams({
+    client_id: process.env.STRAVA_CLIENT_ID,
+    client_secret: process.env.STRAVA_CLIENT_SECRET,
+    grant_type: 'refresh_token',
+    refresh_token: refresh,
+  }).toString();
+
+  const options = {
+    hostname: 'www.strava.com',
+    path: '/oauth/token',             // correct endpoint for refresh
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+  };
+
+  const response = await httpsRequest(options, postData);
+  console.log('Token refresh response:', response);
+  return response;
 }
+
 
 // Decode polyline from Strava
 function decodePolyline(encoded) {
