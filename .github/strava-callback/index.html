@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Strava Authorization</h1>
+    <p id="output"></p>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) {
+        document.getElementById("output").innerText =
+          "Your authorization code: " + code;
+      } else {
+        document.getElementById("output").innerText =
+          "No code found in URL.";
+      }
+    </script>
+  </body>
+</html>
