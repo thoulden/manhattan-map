@@ -44,7 +44,7 @@ async function refreshToken() {
     return null;
   }
 
-  // Strava expects x-www-form-urlencoded, not JSON
+  // ✅ Strava wants x-www-form-urlencoded
   const postData = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID,
     client_secret: process.env.STRAVA_CLIENT_SECRET,
@@ -54,7 +54,7 @@ async function refreshToken() {
 
   const options = {
     hostname: 'www.strava.com',
-    path: '/oauth/token',             // correct endpoint for refresh
+    path: '/api/v3/oauth/token',           // ✅ use /api/v3
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
