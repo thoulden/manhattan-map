@@ -8,35 +8,23 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
   <style>
-    :root{
-      /* Match this to your run polyline color if different */
-      --run-orange: #ff6a00;
-    }
+    :root { --run-orange: #ff6a00; }
     body { margin: 0; padding: 0; background: #000; }
-    #map  { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #map  { position: absolute; inset: 0; }
 
     /* miles counter overlay */
     #miles-counter{
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      z-index: 10;
-      pointer-events: none;
-      color: var(--run-orange);
+      position: absolute; top: 14px; right: 14px; z-index: 10;
+      pointer-events: none; color: var(--run-orange);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      font-weight: 800;
-      font-size: 24px;
-      line-height: 1;
+      font-weight: 800; font-size: 24px; line-height: 1;
       text-shadow: 0 1px 3px rgba(0,0,0,.65);
-      letter-spacing: .3px;
-      font-variant-numeric: tabular-nums;
-      user-select: none;
+      letter-spacing: .3px; font-variant-numeric: tabular-nums; user-select: none;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <!-- total miles badge -->
   <div id="miles-counter" aria-label="Total miles run">To Date: —</div>
 
   <script>
@@ -45,7 +33,7 @@
     let manhattanBoundary = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } };
     let centralParkBoundary = null;
 
-    // Load both boundaries, then install the runs filter and init the map
+    // Load both boundaries, then (maybe) install the runs filter and init the map
     Promise.all([
       fetch('manhattan-boundary.json').then(r => r.json()).catch(() => null),
       fetch('central-park-boundary.json').then(r => r.json()).catch(() => null)
@@ -54,57 +42,81 @@
       if (mb) manhattanBoundary = (mb.type === 'FeatureCollection') ? mb.features[0] : mb;
       if (cp) centralParkBoundary = (cp.type === 'FeatureCollection') ? cp.features[0] : cp;
 
+      // Validate CP polygon area (~3.41 km^2). If absurdly large, skip filtering.
+      let canFilter = false;
       if (centralParkBoundary && centralParkBoundary.geometry) {
-        installRunsFilter(centralParkBoundary); // excludes runs >60% inside CP
+        try {
+          const areaM2 = turf.area(centralParkBoundary);
+          console.log(`Central Park polygon area: ${(areaM2/1e6).toFixed(2)} km²`);
+          if (areaM2 > 1e7) { // >10 km² → probably wrong polygon
+            console.warn('CP boundary area looks too large; skipping filter.');
+          } else {
+            canFilter = true;
+          }
+        } catch (e) {
+          console.warn('Could not compute CP area; skipping filter.', e);
+        }
       } else {
         console.warn('Central Park boundary not loaded; runs will not be filtered.');
       }
 
-      initializeMap();
+      if (canFilter) installRunsFilter(centralParkBoundary);
+      initializeMap(centralParkBoundary);
     })
     .catch(err => {
       console.error('Error loading boundaries:', err);
-      initializeMap(); // still initialize without filtering
+      initializeMap(null); // still initialize, just without CP overlay/filter
     });
 
     /**
-     * Wraps window.fetch so that any request for "manhattan-runs.json"
-     * returns a filtered array where runs with >60% points inside
-     * Central Park are excluded.
+     * Wrap window.fetch so requests for manhattan-runs.json return a filtered array
+     * (exclude runs where >60% of sampled points fall inside Central Park).
      */
     function installRunsFilter(cpFeature) {
       const originalFetch = window.fetch.bind(window);
+      const insideCP = (lngLat) => turf.booleanPointInPolygon(turf.point(lngLat), cpFeature);
 
       window.fetch = async (input, init) => {
         const url = (typeof input === 'string') ? input : input.url;
-
-        if (url && url.endsWith('manhattan-runs.json')) {
+        // robust match (handles query strings like ?v=123)
+        if (url && url.indexOf('manhattan-runs.json') !== -1) {
           const res = await originalFetch(input, init);
           const runs = await res.json();
-
           if (!Array.isArray(runs)) {
             return new Response(JSON.stringify(runs), { headers: { 'Content-Type': 'application/json' } });
           }
 
-          const insideCP = (lngLat) => turf.booleanPointInPolygon(turf.point(lngLat), cpFeature);
-
+          let kept = 0, removed = 0;
           const filtered = runs.filter(run => {
             const coords = run.coordinates || [];
-            if (coords.length === 0) return true; // keep empty/invalid
-            let insideCount = 0;
-            for (const c of coords) if (insideCP(c)) insideCount++;
-            const fracInside = insideCount / coords.length;
-            return fracInside <= 0.60; // exclude if >60% inside CP
+            if (coords.length === 0) { kept++; return true; }
+
+            // Sample up to 200 evenly spaced points
+            const step = Math.max(1, Math.floor(coords.length / 200));
+            let insideCount = 0, sampleCount = 0;
+            for (let i = 0; i < coords.length; i += step) {
+              sampleCount++;
+              if (insideCP(coords[i])) insideCount++;
+            }
+            const fracInside = insideCount / (sampleCount || 1);
+            const keep = fracInside <= 0.60;
+            keep ? kept++ : removed++;
+            return keep;
           });
+
+          console.log(`Runs filtered by CP: kept=${kept}, removed=${removed}`);
+          if (filtered.length && removed) {
+            // log a few fractions for sanity (non-PII)
+            console.log('Example fractions inside CP (first 5 kept/removed):');
+          }
 
           return new Response(JSON.stringify(filtered), { headers: { 'Content-Type': 'application/json' } });
         }
-
         return originalFetch(input, init);
       };
     }
 
-    // === Miles counter (automatically uses filtered runs thanks to the fetch shim) ===
+    // === Miles counter (uses filtered runs thanks to the fetch shim) ===
     function renderMilesCounter() {
       const el = document.getElementById('miles-counter');
       fetch('manhattan-runs.json', { cache: 'no-store' })
@@ -119,71 +131,45 @@
         .catch(() => { el.textContent = 'To Date: —'; });
     }
 
-    function initializeMap() {
+    function initializeMap(cpFeature) {
       const map = new mapboxgl.Map({
         container: 'map',
         style: {
           version: 8,
-          sources: {
-            composite: { type: 'vector', url: 'mapbox://mapbox.mapbox-streets-v8' }
-          },
-          layers: [
-            { id: 'background', type: 'background', paint: { 'background-color': '#000000' } }
-          ]
+          sources: { composite: { type: 'vector', url: 'mapbox://mapbox.mapbox-streets-v8' } },
+          layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#000000' } }]
         },
         center: [-73.944, 40.78],
-        zoom: 11.75,
-        minZoom: 10,
-        maxZoom: 16,
-        bearing: 119
+        zoom: 11.75, minZoom: 10, maxZoom: 16, bearing: 119
       });
 
       map.on('load', () => {
         map.addSource('manhattan-boundary', { type: 'geojson', data: manhattanBoundary });
 
         map.addLayer({
-          id: 'roads-primary',
-          type: 'line',
-          source: 'composite',
-          'source-layer': 'road',
+          id: 'roads-primary', type: 'line', source: 'composite', 'source-layer': 'road',
           filter: ['==', 'class', 'primary'],
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#ffffff',
-            'line-width': { base: 1.5, stops: [[11, 1.5],[14, 3],[16, 6]] }
-          }
+          paint: { 'line-color': '#ffffff', 'line-width': { base: 1.5, stops: [[11, 1.5],[14, 3],[16, 6]] } }
         });
 
         map.addLayer({
-          id: 'roads-secondary',
-          type: 'line',
-          source: 'composite',
-          'source-layer': 'road',
+          id: 'roads-secondary', type: 'line', source: 'composite', 'source-layer': 'road',
           filter: ['in', 'class', 'secondary', 'tertiary'],
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#cccccc',
-            'line-width': { base: 1.5, stops: [[11, 1],[14, 2],[16, 4]] }
-          }
+          paint: { 'line-color': '#cccccc', 'line-width': { base: 1.5, stops: [[11, 1],[14, 2],[16, 4]] } }
         });
 
         map.addLayer({
-          id: 'roads-street',
-          type: 'line',
-          source: 'composite',
-          'source-layer': 'road',
-          filter: ['in', 'class', 'street', 'street_limited'],
-          minzoom: 11,
+          id: 'roads-street', type: 'line', source: 'composite', 'source-layer': 'road',
+          filter: ['in', 'class', 'street', 'street_limited'], minzoom: 11,
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#999999',
-            'line-width': { base: 1.5, stops: [[11, .5],[14, 1],[16, 2]] }
-          }
+          paint: { 'line-color': '#999999', 'line-width': { base: 1.5, stops: [[11, .5],[14, 1],[16, 2]] } }
         });
 
+        // Mask outside Manhattan
         map.addLayer({
-          id: 'mask-outside-manhattan',
-          type: 'fill',
+          id: 'mask-outside-manhattan', type: 'fill',
           source: {
             type: 'geojson',
             data: {
@@ -191,10 +177,7 @@
               geometry: {
                 type: 'Polygon',
                 coordinates: [
-                  [
-                    [-84.5, 30.4], [-84.5, 51.0], [-63.4, 51.0],
-                    [-63.4, 30.4], [-84.5, 30.4]
-                  ],
+                  [[-84.5, 30.4], [-84.5, 51.0], [-63.4, 51.0], [-63.4, 30.4], [-84.5, 30.4]],
                   manhattanBoundary.geometry.coordinates[0]
                 ]
               }
@@ -203,28 +186,40 @@
           paint: { 'fill-color': '#000000', 'fill-opacity': 1 }
         });
 
+        // Central Park overlay (debug/visual confirmation)
+        if (cpFeature) {
+          map.addSource('central-park', { type: 'geojson', data: cpFeature });
+          map.addLayer({
+            id: 'central-park-fill',
+            type: 'fill',
+            source: 'central-park',
+            paint: { 'fill-color': '#2ecc71', 'fill-opacity': 0.10 }
+          });
+          map.addLayer({
+            id: 'central-park-outline',
+            type: 'line',
+            source: 'central-park',
+            paint: { 'line-color': '#2ecc71', 'line-width': 2 }
+          });
+        }
+
         // Logo overlay
         map.addSource('logo-overlay', {
           type: 'image',
           url: 'manhattan-runs-logo-leftalign.png',
           coordinates: [
-            [-73.835, 40.844],   // top-left
-            [-73.892, 40.766],   // top-right
-            [-73.943, 40.788],   // bottom-right
-            [-73.884, 40.867]    // bottom-left
+            [-73.835, 40.844], [-73.892, 40.766], [-73.943, 40.788], [-73.884, 40.867]
           ]
         });
         map.addLayer({
-          id: 'logo-raster',
-          type: 'raster',
-          source: 'logo-overlay',
+          id: 'logo-raster', type: 'raster', source: 'logo-overlay',
           paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
         });
 
         const bounds = [[-74.02, 40.69], [-73.91, 40.88]];
         map.fitBounds(bounds, { center: [-73.944, 40.78], zoom: 11.75, padding: 50, bearing: 119 });
 
-        // Load your integration AFTER the fetch shim so it sees filtered runs
+        // Load integration AFTER fetch shim
         const script = document.createElement('script');
         script.src = 'strava-integration.js';
         script.onload = () => {
