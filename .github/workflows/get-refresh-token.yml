@@ -10,21 +10,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Show the exact workflow file the runner is using
       - name: Show workflow file (sanity check)
         run: |
           echo "=== WORKFLOW FILE CONTENTS ==="
           cat .github/workflows/get-refresh-token.yml || true
           echo "=============================="
 
-      # Show directory layout so we can verify paths
       - name: Debug: list files
         run: |
           pwd
           echo "Repo root:" && ls -la
           echo "Full repo tree:" && ls -R .
 
-      - name: Setup Node 20 (has global fetch)
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -33,6 +31,7 @@ jobs:
         env:
           STRAVA_CLIENT_ID: "${{ secrets.STRAVA_CLIENT_ID }}"
           STRAVA_CLIENT_SECRET: "${{ secrets.STRAVA_CLIENT_SECRET }}"
-          STRAVA_CODE: "${{ secrets.YOUR_AUTHORIZATION_CODE }}"  # map your secret -> env var the script reads
-        run: node .github/scripts/fetch-refresh-token.js
+          STRAVA_CODE: "${{ secrets.YOUR_AUTHORIZATION_CODE }}"   # your one-time code
+        run: node .github/scripts/fetch-refresh-token.js          # <- matches your repo layout
+
 
