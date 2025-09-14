@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 const CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 const CODE = process.env.STRAVA_CODE; // <- read from env var
-const REDIRECT_URI = "https://runs.thomas-houlden.com/scripts/strava-callback/";
+const REDIRECT_URI = "https://runs.thomas-houlden.com/strava-callback.html";
 
 if (!CODE) {
   console.error("Missing STRAVA_CODE env variable");
