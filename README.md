@@ -6,7 +6,7 @@ Data is refreshed automatically via GitHub Actions and committed to the repo as 
 
 ---
 
-## What’s in here
+## What’s in here (relevant files)
 
 ```
 .
@@ -130,23 +130,7 @@ Set `MANHATTAN_MIN_FRAC = 0` if you already filter to Manhattan server-side.
 
 - `manhattan-boundary.json`: a single **Feature/Polygon** in WGS84.  
 - `central-park-boundary.json`: a single **Feature/Polygon** in WGS84.
-
-### Getting a Central Park polygon
-
-- **Draw** at <https://geojson.io> (fastest). Save as GeoJSON.  
-- Or **download** from OpenStreetMap (Overpass Turbo) / NYC Open Data and convert with <https://mapshaper.org>.
-
-If your CP file exported as a FeatureCollection or LineString, reformat to:
-
-```json
-{
-  "type": "Feature",
-  "properties": { "name": "Central Park", "borough": "Manhattan" },
-  "geometry": { "type": "Polygon", "coordinates": [ ...closed ring... ] }
-}
-```
-
-*(The README assumes you already placed both JSONs in the repo root.)*
+These can be used to filter runs that are outside of Manhattan or inside Central Park.
 
 ---
 
@@ -181,14 +165,6 @@ If you use a **custom domain**, set DNS and update the Strava app’s **Authoriz
 
 - **Module not found (`node-fetch`)**  
   → On Node 18+, use built-in `fetch` or the `https` module. No `node-fetch` needed.
-
----
-
-## Customization
-
-- **Color**: change `--run-orange` in `index.html`.  
-- **Hide Central Park overlay**: delete the `central-park-*` layers (and source) in `index.html`.  
-- **Counter text**: in `renderMilesCounter()`, update `"To Date: ${formatted} mi"`.
 
 ---
 
