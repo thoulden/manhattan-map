@@ -15,6 +15,7 @@ Data is refreshed automatically via GitHub Actions and committed to the repo as 
 ├── central-park-boundary.json      # Central Park polygon (WGS84)
 ├── manhattan-runs.json             # GENERATED: filtered runs (updated by workflow)
 ├── strava-integration.js           # Your map layer logic (consumes manhattan-runs.json)
+└── logo                            # A bunch of files with MANHATTAN RUNS logo and logo generator (html file)
 └── .github
     ├── scripts
     │   ├── fetch-strava-runs.js    # Node script to create manhattan-runs.json
