@@ -225,7 +225,7 @@
         ];
 
         // Project to pixel space
-        const projected = baseCoords.map(c => map.project(c));
+        let projected = baseCoords.map(c => map.project(c));
 
         // Compute center in pixel space
         const cx = projected.reduce((s, p) => s + p.x, 0) / projected.length;
@@ -233,7 +233,7 @@
 
         // Rotate if phone
         const rad = phone ? (270 * Math.PI / 180) : 0;
-        const rotated = projected.map(p => {
+        projected = projected.map(p => {
           const dx = p.x - cx;
           const dy = p.y - cy;
           return {
@@ -242,11 +242,31 @@
           };
         });
 
+        // Apply phone-specific shift + scale
+        if (phone) {
+          const shiftPixels = 20; // tweak this if you need a bigger/smaller shift
+          const shiftX = Math.cos(Math.PI / 4) * shiftPixels; // 45° angle
+          const shiftY = Math.sin(Math.PI / 4) * shiftPixels;
+
+          const scaleFactor = 0.85; // 15% smaller
+          projected = projected.map(p => {
+            const dx = p.x - cx;
+            const dy = p.y - cy;
+            return {
+              x: cx + dx * scaleFactor + shiftX,
+              y: cy + dy * scaleFactor - shiftY // minus because y increases downward
+            };
+          });
+        }
+
         // Convert back to [lng, lat] arrays
-        const rotatedCoords = rotated.map(p => {
+        const rotatedCoords = projected.map(p => {
           const lngLat = map.unproject([p.x, p.y]);
-          return [lngLat.lng, lngLat.lat];  // ✅ array format required by Mapbox
+          return [lngLat.lng, lngLat.lat];
         });
+
+        // Debug: log final coordinates so you can check the shift
+        console.log("Final logo coordinates:", rotatedCoords);
 
         // Add source + layer
         map.addSource('logo-overlay', {
