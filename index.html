@@ -132,7 +132,7 @@
     }
 
     const BASE_BEARING = 119;                             // your current bearing 
-    const MOBILE_BEARING = (BASE_BEARING + 180) % 360;     // rotate +90° for phones
+    const MOBILE_BEARING = (BASE_BEARING + 270) % 360;     // rotate +90° for phones
     const BASE_ZOOM = 11.75;                 // your current zoom
     const MOBILE_SCALE = 0.60;               // 40% zoom-out (i.e., keep 60% scale)
     const MOBILE_ZOOM = BASE_ZOOM + Math.log2(MOBILE_SCALE); // ≈ 11.75 - 0.736
