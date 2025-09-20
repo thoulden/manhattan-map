@@ -133,6 +133,9 @@
 
     const BASE_BEARING = 119;                             // your current bearing 
     const MOBILE_BEARING = (BASE_BEARING - 90) % 360;     // rotate +90° for phones
+    const BASE_ZOOM = 11.75;                 // your current zoom
+    const MOBILE_SCALE = 0.60;               // 40% zoom-out (i.e., keep 60% scale)
+    const MOBILE_ZOOM = BASE_ZOOM + Math.log2(MOBILE_SCALE); // ≈ 11.75 - 0.736
 
     function isPhoneLike() {
       return window.matchMedia('(pointer:coarse) and (max-width: 820px)').matches;
@@ -141,6 +144,7 @@
     
     function initializeMap(cpFeature) {
       const initialBearing = isPhoneLike() ? MOBILE_BEARING : BASE_BEARING;
+      const initialZoom    = isPhone ? MOBILE_ZOOM    : BASE_ZOOM;
       const map = new mapboxgl.Map({
         container: 'map',
         style: {
@@ -149,7 +153,7 @@
           layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#000000' } }]
         },
         center: [-73.944, 40.78],
-        zoom: 11.75, minZoom: 10, maxZoom: 16, bearing: initialBearing
+        zoom: initialZoom, minZoom: 10, maxZoom: 16, bearing: initialBearing
       });
 
       map.on('load', () => {
@@ -220,7 +224,7 @@
         });
 
         const bounds = [[-74.02, 40.69], [-73.91, 40.88]];
-        map.fitBounds(bounds, { center: [-73.944, 40.78], zoom: 11.75, padding: 50, bearing: initialBearing });
+        map.fitBounds(bounds, { center: [-73.944, 40.78], zoom: initialZoom, padding: 50, bearing: initialBearing });
 
         // Load integration AFTER fetch shim
         const script = document.createElement('script');
