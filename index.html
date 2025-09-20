@@ -212,51 +212,55 @@
         }
 
         // Logo overlay
-        const logoUrl = phone
-          ? 'logo/manhattan-runs-logo-rightalign.png'
-          : 'logo/manhattan-runs-logo-leftalign.png';
+        // inside map.on('load')
+        map.once('render', () => {
+          console.log("Map rendered, adding logo...");
+    
+          const logoUrl = phone
+            ? 'logo/manhattan-runs-logo-rightalign.png'
+            : 'logo/manhattan-runs-logo-leftalign.png';
 
-        // Base coordinates
-        const baseCoords = [
-          [-73.835, 40.844],
-          [-73.892, 40.766],
-          [-73.943, 40.788],
-          [-73.884, 40.867]
-        ];
+          // Base coordinates
+          const baseCoords = [
+            [-73.835, 40.844],
+            [-73.892, 40.766],
+            [-73.943, 40.788],
+            [-73.884, 40.867]
+          ];
 
-        // Project to pixel space
-        const projected = baseCoords.map(c => map.project(c));
+          // Project
+          const projected = baseCoords.map(c => map.project(c));
+          console.log("Projected coords:", projected);
 
-        // Compute center in pixel space
-        const cx = projected.reduce((s, p) => s + p.x, 0) / projected.length;
-        const cy = projected.reduce((s, p) => s + p.y, 0) / projected.length;
+          const cx = projected.reduce((s, p) => s + p.x, 0) / projected.length;
+          const cy = projected.reduce((s, p) => s + p.y, 0) / projected.length;
 
-        // Rotate if phone
-        const rad = phone ? (270 * Math.PI / 180) : 0;
-        const rotated = projected.map(p => {
-          const dx = p.x - cx;
-          const dy = p.y - cy;
-          return {
-            x: cx + dx * Math.cos(rad) - dy * Math.sin(rad),
-            y: cy + dx * Math.sin(rad) + dy * Math.cos(rad)
-          };
-        });
+          const rad = phone ? (270 * Math.PI / 180) : 0;
+          const rotatedCoords = projected.map(p => {
+            const dx = p.x - cx;
+            const dy = p.y - cy;
+            return map.unproject({
+              x: cx + dx * Math.cos(rad) - dy * Math.sin(rad),
+              y: cy + dx * Math.sin(rad) + dy * Math.cos(rad)
+            });
+          });
 
-        // Convert back to lng/lat
-        const rotatedCoords = rotated.map(p => map.unproject(p));
+          console.log("Final logo coords:", rotatedCoords);
 
-        // Add source + layer
-        map.addSource('logo-overlay', {
-          type: 'image',
-          url: logoUrl,
-          coordinates: rotatedCoords
-        });
+          map.addSource('logo-overlay', {
+            type: 'image',
+            url: logoUrl,
+            coordinates: rotatedCoords
+          });
 
-        map.addLayer({
-          id: 'logo-raster',
-          type: 'raster',
-          source: 'logo-overlay',
-          paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
+          map.addLayer({
+            id: 'logo-raster',
+            type: 'raster',
+            source: 'logo-overlay',
+            paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
+          });
+
+          console.log("Logo added successfully");
         });
 
 
