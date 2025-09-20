@@ -284,7 +284,15 @@
 
 
         const bounds = [[-74.02, 40.69], [-73.91, 40.88]];
-        map.fitBounds(bounds, { center: [-73.944, 40.78], zoom: initialZoom, padding: 50, bearing: initialBearing });
+        const mobilePadding = { top: 50, right: 140, bottom: 50, left: 20 }; // tweak right/left to taste
+        const padding = phone ? mobilePadding : 50;
+
+        map.fitBounds(bounds, {
+          // you can keep these if you want to lock zoom/bearing
+          zoom: initialZoom,
+          bearing: initialBearing,
+          padding
+        });
 
         // Load integration AFTER fetch shim
         const script = document.createElement('script');
