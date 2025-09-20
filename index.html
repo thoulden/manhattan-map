@@ -132,7 +132,7 @@
     }
 
     const BASE_BEARING = 119;                             // your current bearing 
-    const MOBILE_BEARING = (BASE_BEARING + 90) % 360;     // rotate +90° for phones
+    const MOBILE_BEARING = (BASE_BEARING - 90) % 360;     // rotate +90° for phones
 
     function isPhoneLike() {
       return window.matchMedia('(pointer:coarse) and (max-width: 820px)').matches;
