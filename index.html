@@ -213,44 +213,44 @@
 
         // Logo overlay
         // --- Logo overlay (mobile: rotate 270° + use right-align asset) ---
-const phone = isPhoneLike();
-const logoUrl = phone
-  ? 'logo/manhattan-runs-logo-rightalign.png'
-  : 'logo/manhattan-runs-logo-leftalign.png';
+        const phone = isPhoneLike();
+        const logoUrl = phone
+          ? 'logo/manhattan-runs-logo-rightalign.png'
+          : 'logo/manhattan-runs-logo-leftalign.png';
 
-let logoCoords = [
-  [-73.835, 40.844],
-  [-73.892, 40.766],
-  [-73.943, 40.788],
-  [-73.884, 40.867]
-];
+        let logoCoords = [
+          [-73.835, 40.844],
+          [-73.892, 40.766],
+          [-73.943, 40.788],
+          [-73.884, 40.867]
+        ];
 
-// Rotate around the center if on phone
-if (phone) {
-  const cx = logoCoords.reduce((s, p) => s + p[0], 0) / logoCoords.length;
-  const cy = logoCoords.reduce((s, p) => s + p[1], 0) / logoCoords.length;
-  const rad = 270 * Math.PI / 180; // 270° = -90°
+        // Rotate around the center if on phone
+        if (phone) {
+          const cx = logoCoords.reduce((s, p) => s + p[0], 0) / logoCoords.length;
+          const cy = logoCoords.reduce((s, p) => s + p[1], 0) / logoCoords.length;
+          const rad = 270 * Math.PI / 180; // 270° = -90°
 
-  logoCoords = logoCoords.map(([x, y]) => {
-    const dx = x - cx, dy = y - cy;
-    const rx = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
-    const ry = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
-    return [rx, ry];
-  });
-}
+          logoCoords = logoCoords.map(([x, y]) => {
+            const dx = x - cx, dy = y - cy;
+            const rx = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
+            const ry = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
+            return [rx, ry];
+          });
+        }
 
-map.addSource('logo-overlay', {
-  type: 'image',
-  url: logoUrl,
-  coordinates: logoCoords
-});
+        map.addSource('logo-overlay', {
+          type: 'image',
+          url: logoUrl,
+          coordinates: logoCoords
+        });
 
-map.addLayer({
-  id: 'logo-raster',
-  type: 'raster',
-  source: 'logo-overlay',
-  paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
-});
+        map.addLayer({
+          id: 'logo-raster',
+          type: 'raster',
+          source: 'logo-overlay',
+          paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 }
+        });
 
 
         const bounds = [[-74.02, 40.69], [-73.91, 40.88]];
