@@ -143,8 +143,9 @@
 
     
     function initializeMap(cpFeature) {
-      const initialBearing = isPhoneLike() ? MOBILE_BEARING : BASE_BEARING;
-      const initialZoom    = isPhone ? MOBILE_ZOOM    : BASE_ZOOM;
+      const phone = isPhoneLike();
+      const initialBearing = phone ? MOBILE_BEARING : BASE_BEARING;
+      const initialZoom    = phone ? MOBILE_ZOOM    : BASE_ZOOM;
       const map = new mapboxgl.Map({
         container: 'map',
         style: {
