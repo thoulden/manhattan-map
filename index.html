@@ -228,11 +228,11 @@
         // Rotate around the center if on phone
         const projected = baseCoords.map(c => map.project(c));
 
-        // Compute center of quad in pixel space
+        // Compute center in pixel space
         const cx = projected.reduce((s, p) => s + p.x, 0) / projected.length;
         const cy = projected.reduce((s, p) => s + p.y, 0) / projected.length;
 
-        // Rotate points in pixel space if phone
+        // Rotate points if on phone
         const rad = phone ? (270 * Math.PI / 180) : 0;
         const rotated = projected.map(p => {
           const dx = p.x - cx;
@@ -244,12 +244,7 @@
         });
 
         // Convert back to lng/lat
-        const logoCoords = rotated.map(p => map.unproject(p));
-                map.addSource('logo-overlay', {
-                  type: 'image',
-                  url: logoUrl,
-                  coordinates: logoCoords
-                });
+        const rotatedCoords = rotated.map(p => map.unproject(p));
 
         map.addLayer({
           id: 'logo-raster',
