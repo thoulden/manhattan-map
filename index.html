@@ -212,27 +212,26 @@
         }
 
         // Logo overlay
-        // --- Logo overlay (mobile: rotate 270° + use right-align asset) ---
-        const phone = isPhoneLike();
         const logoUrl = phone
           ? 'logo/manhattan-runs-logo-rightalign.png'
           : 'logo/manhattan-runs-logo-leftalign.png';
 
-        let logoCoords = [
+        // Base coordinates
+        const baseCoords = [
           [-73.835, 40.844],
           [-73.892, 40.766],
           [-73.943, 40.788],
           [-73.884, 40.867]
         ];
 
-        // Rotate around the center if on phone
+        // Project to pixel space
         const projected = baseCoords.map(c => map.project(c));
 
         // Compute center in pixel space
         const cx = projected.reduce((s, p) => s + p.x, 0) / projected.length;
         const cy = projected.reduce((s, p) => s + p.y, 0) / projected.length;
 
-        // Rotate points if on phone
+        // Rotate if phone
         const rad = phone ? (270 * Math.PI / 180) : 0;
         const rotated = projected.map(p => {
           const dx = p.x - cx;
@@ -245,6 +244,13 @@
 
         // Convert back to lng/lat
         const rotatedCoords = rotated.map(p => map.unproject(p));
+
+        // Add source + layer
+        map.addSource('logo-overlay', {
+          type: 'image',
+          url: logoUrl,
+          coordinates: rotatedCoords
+        });
 
         map.addLayer({
           id: 'logo-raster',
