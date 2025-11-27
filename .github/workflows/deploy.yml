@@ -1,9 +1,9 @@
 name: Deploy with Secrets
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_call:      # 👈 this makes it reusable
+  workflow_dispatch:  # optional, lets you run it manually from the UI
+  # (remove push if you don't want normal pushes to trigger deploy)
 
 permissions:
   contents: read
