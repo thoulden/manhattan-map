@@ -58,7 +58,6 @@ jobs:
         run: node .github/scripts/fetch-strava-runs.js
 
       # 3) (Optional) auto-rotate the repo secret to the newest refresh token
-      # Gate with env.GH_TOKEN instead of secrets.* in the if:
       - name: Rotate STRAVA_REFRESH_TOKEN secret
         if: ${{ steps.refresh.outputs.refresh_token != '' && env.GH_TOKEN != '' }}
         env:
@@ -68,21 +67,6 @@ jobs:
           echo -n "$NEW_RT" | gh secret set STRAVA_REFRESH_TOKEN -R "$GITHUB_REPOSITORY" -b-
 
       # 4) Commit output file if it changed
-      - name: Commit updated runs data
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name  "GitHub Action"
-          git add manhattan-runs.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
-          git push
-
-jobs:
-  sync-runs:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      # ... all your existing steps ...
       - name: Commit updated runs data
         run: |
           git config --local user.email "action@github.com"
