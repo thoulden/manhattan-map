@@ -75,3 +75,23 @@ jobs:
           git add manhattan-runs.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
           git push
+
+jobs:
+  sync-runs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # ... all your existing steps ...
+      - name: Commit updated runs data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name  "GitHub Action"
+          git add manhattan-runs.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update Strava runs [skip ci]"
+          git push
+
+  deploy:
+    needs: sync-runs
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
