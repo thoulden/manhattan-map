@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'
-
+    
+permissions:
+  contents: write   # for git commit & push
+  pages: write      # required by deploy.yml
+  id-token: write   # required by deploy.yml
+  
 jobs:
   sync-runs:
     runs-on: ubuntu-latest
