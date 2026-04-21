@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/22364195/README.md)
 # Manhattan Runs (Strava → Mapbox on GitHub Pages)
 
 A tiny site that renders your Strava runs over Manhattan with Mapbox GL, shows a **“To Date: N mi”** counter, and (optionally) **excludes runs that are mostly inside Central Park**.  
